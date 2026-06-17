@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/AppointmentService/">
+    <Project Path="AppointmentService/AppointmentService.API/AppointmentService.API.csproj" />
+    <Project Path="AppointmentService/AppointmentService.Domain/AppointmentService.Domain.csproj" />
+    <Project Path="AppointmentService/AppointmentService.Infrastructure/AppointmentService.Infrastructure.csproj" />
+    <Project Path="AppointmentService/AppointmentService.Tests/AppointmentService.Tests.csproj" />
+  </Folder>
+</Solution>
