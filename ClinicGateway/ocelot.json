@@ -1,8 +1,10 @@
 {
   "Routes": [
-    // 1. NHÓM 5: APPOINTMENT SERVICE (Dịch vụ Đặt lịch khám)
+    // ==========================================
+    // 1. NHÓM 5: APPOINTMENT SERVICE (Public Routes - Không cần Token)
+    // ==========================================
     {
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/doctors",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -10,11 +12,129 @@
           "Port": 5000
         }
       ],
-      "UpstreamPathTemplate": "/api/appointments-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamPathTemplate": "/api/appointments-service/doctors",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/schedules/available",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/schedules/available",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/appointments/book",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/book",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/tv",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/tv",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/testauth/token",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/testauth/token",
+      "UpstreamHttpMethod": [ "GET" ]
     },
 
-    // 2. NHÓM 4: MEDICAL RECORD SERVICE (Dịch vụ Bệnh án điện tử)
+    // ==========================================
+    // 2. NHÓM 5: APPOINTMENT SERVICE (Secure Routes - Xác thực JWT tại Gateway)
+    // ==========================================
+    {
+      "DownstreamPathTemplate": "/api/appointments/pending",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/pending",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/checkin",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/checkin",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/active",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/active",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/status",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/status",
+      "UpstreamHttpMethod": [ "PUT" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    // ==========================================
+    // 3. NHÓM 4: MEDICAL RECORD SERVICE (Bảo mật - Xác thực tại Gateway)
+    // ==========================================
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
@@ -25,10 +145,28 @@
         }
       ],
       "UpstreamPathTemplate": "/api/medical-records-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
     },
 
-    // 3. NHÓM 6: PHARMACY & BILLING SERVICE (Dịch vụ Kho thuốc & Viện phí / Auth)
+    // ==========================================
+    // 4. NHÓM 6: PHARMACY & BILLING SERVICE (Đăng nhập public & API bảo mật)
+    // ==========================================
+    {
+      "DownstreamPathTemplate": "/api/auth/login",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.71.15.204",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/pharmacy-billing-service/auth/login",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
@@ -39,7 +177,11 @@
         }
       ],
       "UpstreamPathTemplate": "/api/pharmacy-billing-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
     }
   ],
   "GlobalConfiguration": {
