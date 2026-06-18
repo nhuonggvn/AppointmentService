@@ -64,25 +64,147 @@
 
     <v-main class="bg-background">
       <v-container fluid class="pa-6">
-        <!-- Tab navigation -->
-        <v-tabs v-model="activeTab" bg-color="surface" align-tabs="start" rounded="lg" class="mb-6" border>
-          <v-tab value="booking" class="font-weight-bold">
-            <v-icon icon="mdi-calendar-plus" class="mr-2" />
-            Bệnh Nhân Đặt Lịch
-          </v-tab>
-          <v-tab value="reception" class="font-weight-bold">
-            <v-icon icon="mdi-clipboard-text-play" class="mr-2" />
-            Quầy Tiếp Tân
-          </v-tab>
-          <v-tab value="doctor" class="font-weight-bold">
-            <v-icon icon="mdi-doctor" class="mr-2" />
-            Phòng Khám Bác Sĩ
-          </v-tab>
-          <v-tab value="tv" class="font-weight-bold">
-            <v-icon icon="mdi-television-classic" class="mr-2" color="warning" />
-            Màn Hình Tivi Hàng Chờ
-          </v-tab>
-        </v-tabs>
+        
+        <!-- MÀN HÌNH ĐĂNG NHẬP (Hiển thị nếu chưa đăng nhập và không phải đang xem màn hình TV) -->
+        <div v-if="!currentUser.token && activeTab !== 'tv'" class="d-flex align-center justify-center" style="min-height: 75vh;">
+          <v-card width="450" class="pa-8 bg-surface rounded-lg elevation-12" border>
+            <div class="text-center mb-6">
+              <v-icon icon="mdi-heart-pulse" color="primary" size="48" class="mb-2" />
+              <h2 class="text-h5 font-weight-bold text-primary">CLINIC BOOKING SYSTEM</h2>
+              <div class="text-caption text-grey-lighten-1">Hệ thống đặt lịch & quản lý phòng khám liên thông</div>
+            </div>
+
+            <!-- Login Form -->
+            <v-form @submit.prevent="handleLogin">
+              <v-text-field
+                v-model="loginForm.username"
+                label="Tên đăng nhập"
+                prepend-inner-icon="mdi-account"
+                variant="outlined"
+                density="comfortable"
+                class="mb-4"
+                required
+              />
+              <v-text-field
+                v-model="loginForm.password"
+                label="Mật khẩu"
+                prepend-inner-icon="mdi-lock"
+                type="password"
+                variant="outlined"
+                density="comfortable"
+                class="mb-6"
+                required
+              />
+              <v-btn type="submit" color="primary" block size="large" class="font-weight-bold mb-4" :loading="loading">
+                Đăng Nhập
+              </v-btn>
+            </v-form>
+
+            <v-divider class="my-4" />
+
+            <!-- Quick Demo Login -->
+            <div class="text-subtitle-2 font-weight-bold mb-2 text-center text-grey-lighten-1">Đăng nhập nhanh để Demo (BTL)</div>
+            <v-row dense class="mb-4">
+              <v-col cols="6">
+                <v-btn block variant="tonal" color="primary" size="small" class="font-weight-bold" @click="quickLogin('Admin')">
+                  <v-icon icon="mdi-shield-account" class="mr-1" /> Admin
+                </v-btn>
+              </v-col>
+              <v-col cols="6">
+                <v-btn block variant="tonal" color="success" size="small" class="font-weight-bold" @click="quickLogin('Doctor')">
+                  <v-icon icon="mdi-doctor" class="mr-1" /> Bác Sĩ
+                </v-btn>
+              </v-col>
+              <v-col cols="6">
+                <v-btn block variant="tonal" color="secondary" size="small" class="font-weight-bold" @click="quickLogin('Receptionist')">
+                  <v-icon icon="mdi-account-tie" class="mr-1" /> Tiếp Tân
+                </v-btn>
+              </v-col>
+              <v-col cols="6">
+                <v-btn block variant="tonal" color="info" size="small" class="font-weight-bold" @click="quickLogin('Patient')">
+                  <v-icon icon="mdi-account" class="mr-1" /> Bệnh Nhân
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <div class="text-center">
+              <v-btn variant="text" color="warning" size="small" @click="activeTab = 'tv'">
+                <v-icon icon="mdi-television-classic" class="mr-1" /> Xem Tivi Hàng Chờ (Công cộng)
+              </v-btn>
+            </div>
+          </v-card>
+        </div>
+
+        <!-- GIAO DIỆN CHÍNH SAU KHI ĐĂNG NHẬP HOẶC KHI XEM MÀN HÌNH TV -->
+        <div v-else>
+          <!-- Nút Đăng xuất & Thông tin người dùng -->
+          <div class="d-flex justify-space-between align-center mb-6 bg-surface pa-4 rounded-lg border">
+            <div class="d-flex align-center">
+              <v-avatar color="primary" size="40" class="mr-3 text-subtitle-1 font-weight-bold text-white">
+                {{ (currentUser.username || 'TV').substring(0, 2).toUpperCase() }}
+              </v-avatar>
+              <div>
+                <div class="font-weight-bold text-subtitle-1">
+                  {{ currentUser.username || 'Màn hình Tivi công cộng' }}
+                </div>
+                <div class="text-caption text-grey">
+                  Vai trò: <strong class="text-primary">{{ currentUser.role || 'Khách xem TV' }}</strong>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-flex align-center">
+              <!-- Switch Mock Mode -->
+              <v-switch
+                v-model="isMockMode"
+                color="warning"
+                label="Chế độ giả lập (Mock API)"
+                hide-details
+                density="compact"
+                class="mr-6 font-weight-bold"
+              />
+              <v-btn v-if="currentUser.token" variant="outlined" color="error" size="small" prepend-icon="mdi-logout" @click="handleLogout">
+                Đăng xuất
+              </v-btn>
+              <v-btn v-else variant="flat" color="primary" size="small" prepend-icon="mdi-login" @click="activeTab = 'booking'">
+                Đăng nhập hệ thống
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- Tab navigation (Lọc theo vai trò) -->
+          <v-tabs v-model="activeTab" bg-color="surface" align-tabs="start" rounded="lg" class="mb-6" border>
+            <!-- Bệnh nhân: Thấy đặt lịch khám -->
+            <v-tab v-if="currentUser.role === 'Patient' || currentUser.role === 'Admin'" value="booking" class="font-weight-bold">
+              <v-icon icon="mdi-calendar-plus" class="mr-2" />
+              Bệnh Nhân Đặt Lịch
+            </v-tab>
+            <!-- Tiếp tân: Thấy tiếp nhận & xếp hàng -->
+            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Admin'" value="reception" class="font-weight-bold">
+              <v-icon icon="mdi-clipboard-text-play" class="mr-2" />
+              Quầy Tiếp Tân
+            </v-tab>
+            <!-- Bác sĩ: Thấy phòng khám bác sĩ -->
+            <v-tab v-if="currentUser.role === 'Doctor' || currentUser.role === 'Admin'" value="doctor" class="font-weight-bold">
+              <v-icon icon="mdi-doctor" class="mr-2" />
+              Phòng Khám Bác Sĩ
+            </v-tab>
+            <!-- Dược sĩ & Thu ngân (Tiếp tân/Thu ngân): Thấy Kho thuốc & viện phí -->
+            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Admin'" value="pharmacy" class="font-weight-bold">
+              <v-icon icon="mdi-pill" class="mr-2" color="success" />
+              Kho Thuốc & Viện Phí
+            </v-tab>
+            <!-- Admin: Thấy Quản lý Admin -->
+            <v-tab v-if="currentUser.role === 'Admin'" value="admin" class="font-weight-bold">
+              <v-icon icon="mdi-cog" class="mr-2" color="primary" />
+              Quản Trị Bác Sĩ
+            </v-tab>
+            <!-- Mọi người: Xem được Tivi hàng chờ -->
+            <v-tab value="tv" class="font-weight-bold">
+              <v-icon icon="mdi-television-classic" class="mr-2" color="warning" />
+              Màn Hình Tivi Hàng Chờ
+            </v-tab>
+          </v-tabs>
 
         <!-- Dynamic Alert Notification -->
         <v-alert
@@ -439,121 +561,459 @@
             </v-row>
           </v-window-item>
 
-          <!-- 3. DOCTOR PORTAL TAB -->
+
+
+          <!-- 3. DOCTOR PORTAL TAB (Khám bệnh & Kê đơn thuốc) -->
           <v-window-item value="doctor">
             <v-row>
-              <!-- Choose Doctor -->
+              <!-- Danh sách bệnh nhân chờ khám -->
               <v-col cols="12" md="4">
                 <v-card border flat class="bg-surface pa-6 mb-6">
-                  <div class="d-flex align-center mb-4">
-                    <v-icon icon="mdi-account-settings-outline" color="primary" class="mr-2" />
-                    <h2 class="text-h6 font-weight-bold">Chọn Bác Sĩ Trực Ca</h2>
-                  </div>
-
+                  <div class="text-subtitle-1 font-weight-bold mb-4">Bác sĩ trực ca</div>
                   <v-select
                     v-model="doctorPortal.doctorId"
                     :items="doctors"
                     item-title="fullName"
                     item-value="id"
-                    label="Chọn Bác Sĩ"
+                    label="Chọn Bác sĩ"
                     variant="outlined"
                     density="comfortable"
                     @update:model-value="fetchDoctorActiveQueue"
                   />
 
-                  <div v-if="doctorPortal.doctorId" class="mt-4">
-                    <v-btn block color="primary" prepend-icon="mdi-refresh" @click="fetchDoctorActiveQueue" :loading="loading">
-                      Cập nhật hàng chờ
-                    </v-btn>
-                  </div>
-                </v-card>
-              </v-col>
+                  <v-divider class="my-4" />
 
-              <!-- Patient list inside doctor's queue -->
-              <v-col cols="12" md="8">
-                <v-card border flat class="bg-surface pa-6">
-                  <div class="d-flex align-center justify-space-between mb-4">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-list-status" color="primary" class="mr-2" />
-                      <h2 class="text-h6 font-weight-bold">Bệnh Nhân Đang Chờ Khám Hôm Nay</h2>
-                    </div>
-                    <v-chip v-if="doctorPortal.doctorId" color="info" size="small">
-                      Đang đợi: {{ doctorQueue.filter(q => q.status === 'ChoKham').length }}
+                  <div class="d-flex justify-space-between align-center mb-3">
+                    <span class="font-weight-bold">Bệnh nhân đợi khám</span>
+                    <v-chip v-if="doctorPortal.doctorId" color="primary" size="small">
+                      Đợi: {{ doctorQueue.filter(q => q.status === 'ChoKham').length }}
                     </v-chip>
                   </div>
 
-                  <v-alert v-if="!doctorPortal.doctorId" type="info" variant="text">
-                    Vui lòng chọn bác sĩ ở cột bên trái để quản lý danh sách khám bệnh.
+                  <v-alert v-if="!doctorPortal.doctorId" type="info" variant="tonal" density="comfortable">
+                    Chọn bác sĩ trực ca để xem danh sách chờ.
                   </v-alert>
-                  <v-alert v-else-if="doctorQueue.length === 0" type="info" variant="text">
-                    Hôm nay bác sĩ chưa có bệnh nhân nào trong hàng chờ.
+                  <v-alert v-else-if="doctorQueue.length === 0" type="warning" variant="tonal" density="comfortable">
+                    Hàng chờ trống.
+                  </v-alert>
+                  
+                  <v-list v-else bg-color="transparent" class="pa-0">
+                    <v-card
+                      v-for="qItem in sortedDoctorQueue"
+                      :key="qItem.id"
+                      border
+                      flat
+                      class="mb-2 pa-3"
+                      :color="qItem.status === 'DangKham' ? 'slate-900' : 'surface'"
+                      :style="qItem.status === 'DangKham' ? 'border: 1px solid #38BDF8 !important' : ''"
+                    >
+                      <div class="d-flex justify-space-between align-center">
+                        <div>
+                          <div class="font-weight-bold">Số {{ qItem.queueNumber }}. {{ qItem.patientName }}</div>
+                          <div class="text-caption text-grey">Trạng thái: {{ qItem.status }}</div>
+                        </div>
+                        <div class="d-flex gap-1">
+                          <v-btn
+                            v-if="qItem.status === 'ChoKham'"
+                            color="primary"
+                            size="x-small"
+                            @click="updateQueueStatus(qItem.id, 2)"
+                          >
+                            Gọi khám
+                          </v-btn>
+                          <v-btn
+                            v-if="qItem.status === 'DangKham'"
+                            color="success"
+                            size="x-small"
+                            @click="selectConsultingPatient(qItem)"
+                          >
+                            Ghi bệnh án
+                          </v-btn>
+                          <v-btn
+                            v-if="qItem.status === 'ChoKham' || qItem.status === 'DangKham'"
+                            color="error"
+                            variant="text"
+                            size="x-small"
+                            @click="updateQueueStatus(qItem.id, 3)"
+                          >
+                            Bỏ qua
+                          </v-btn>
+                        </div>
+                      </div>
+                    </v-card>
+                  </v-list>
+                </v-card>
+              </v-col>
+
+              <!-- Khu vực Bệnh án & Kê đơn thuốc -->
+              <v-col cols="12" md="8">
+                <v-card border flat class="bg-surface pa-6 h-100">
+                  <div class="text-h6 font-weight-bold mb-4 text-primary">Khu vực khám bệnh & Kê đơn thuốc</div>
+                  
+                  <v-alert v-if="!activeConsultation.queueId" type="info" variant="tonal">
+                    Vui lòng nhấn Gọi khám và chọn Ghi bệnh án của bệnh nhân đang khám để thực hiện chẩn đoán.
                   </v-alert>
 
-                  <v-row v-else density="comfortable">
-                    <v-col v-for="qItem in sortedDoctorQueue" :key="qItem.id" cols="12">
-                      <v-card
-                        border
-                        flat
-                        :class="qItem.status === 'DangKham' ? 'pa-4 bg-slate-900 border-primary' : 'pa-4'"
-                      >
-                        <div class="d-flex justify-space-between align-center">
-                          <div>
-                            <div class="d-flex align-center gap-2 mb-1">
-                              <v-avatar color="primary" size="32" class="font-weight-black text-subtitle-2 mr-2">
-                                {{ qItem.queueNumber }}
-                              </v-avatar>
-                              <span class="font-weight-bold text-subtitle-1">{{ qItem.patientName }}</span>
-                              <v-chip size="x-small" :color="qItem.status === 'DangKham' ? 'primary' : 'grey'">
-                                {{ qItem.status }}
-                              </v-chip>
-                            </div>
-                            <div class="text-caption text-grey ml-10">
-                              Giờ vào tiếp nhận: {{ formatTime(qItem.checkInTime) }}
-                            </div>
-                          </div>
-                          
-                          <div class="d-flex gap-2">
-                            <!-- Call next / Start call -->
-                            <v-btn
-                              v-if="qItem.status === 'ChoKham'"
-                              color="primary"
-                              size="small"
-                              prepend-icon="mdi-volume-high"
-                              @click="updateQueueStatus(qItem.id, 2)"
-                            >
-                              Gọi Khám (Đang Khám)
-                            </v-btn>
-                            <!-- Complete consultation -->
-                            <v-btn
-                              v-if="qItem.status === 'DangKham'"
-                              color="success"
-                              size="small"
-                              prepend-icon="mdi-check-bold"
-                              @click="updateQueueStatus(qItem.id, 4)"
-                            >
-                              Xong Ca Khám
-                            </v-btn>
-                            <!-- Skip patient -->
-                            <v-btn
-                              v-if="qItem.status === 'ChoKham' || qItem.status === 'DangKham'"
-                              color="warning"
-                              variant="outlined"
-                              size="small"
-                              @click="updateQueueStatus(qItem.id, 3)"
-                            >
-                              Bỏ Qua
-                            </v-btn>
-                          </div>
-                        </div>
-                      </v-card>
-                    </v-col>
-                  </v-row>
+                  <v-form v-else @submit.prevent="submitConsultation">
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 font-weight-bold text-grey-lighten-1">Thông tin bệnh nhân</div>
+                        <div class="text-body-1 py-1">Họ tên: <strong>{{ activeConsultation.patientName }}</strong></div>
+                        <div class="text-body-1 py-1">Số thứ tự khám: <strong>{{ activeConsultation.queueNumber }}</strong></div>
+                      </v-col>
+                      <v-col cols="12" sm="6">
+                        <div class="text-subtitle-2 font-weight-bold text-grey-lighten-1">Lịch sử khám bệnh cũ</div>
+                        <v-btn size="small" variant="outlined" color="info" class="mt-1" @click="viewPatientHistory(activeConsultation.patientPhone)">
+                          Xem lịch sử bệnh án
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+
+                    <v-divider class="my-4" />
+
+                    <!-- Bệnh án -->
+                    <div class="text-subtitle-1 font-weight-bold mb-3 text-secondary">Ghi nhận Bệnh án</div>
+                    <v-text-field
+                      v-model="activeConsultation.symptoms"
+                      label="Triệu chứng lâm sàng"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-3"
+                      required
+                    />
+                    <v-text-field
+                      v-model="activeConsultation.diagnosis"
+                      label="Chẩn đoán xác định"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-3"
+                      required
+                    />
+                    <v-text-field
+                      v-model="activeConsultation.notes"
+                      label="Ghi chú dặn dò bác sĩ"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-4"
+                    />
+
+                    <v-divider class="my-4" />
+
+                    <!-- Kê đơn thuốc -->
+                    <div class="text-subtitle-1 font-weight-bold mb-3 text-success">Kê đơn thuốc điều trị</div>
+                    <v-row density="comfortable" class="align-center">
+                      <v-col cols="12" sm="4">
+                        <v-autocomplete
+                          v-model="activeConsultation.currentDrug.drugId"
+                          :items="drugs"
+                          item-title="name"
+                          item-value="id"
+                          label="Chọn thuốc"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details
+                          @update:model-value="onDrugSelected"
+                        />
+                      </v-col>
+                      <v-col cols="12" sm="2">
+                        <v-text-field
+                          v-model.number="activeConsultation.currentDrug.quantity"
+                          label="Số lượng"
+                          type="number"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details
+                        />
+                      </v-col>
+                      <v-col cols="12" sm="4">
+                        <v-text-field
+                          v-model="activeConsultation.currentDrug.dosage"
+                          label="Liều dùng cách dùng"
+                          placeholder="Uống ngày 2 lần, mỗi lần 1 viên"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details
+                        />
+                      </v-col>
+                      <v-col cols="12" sm="2">
+                        <v-btn block color="success" class="font-weight-bold" @click="addDrugToPrescription">
+                          Thêm
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+
+                    <!-- Danh sách thuốc đã kê -->
+                    <div v-if="activeConsultation.prescription.length > 0" class="mt-4">
+                      <div class="text-subtitle-2 font-weight-bold mb-2">Đơn thuốc đã kê:</div>
+                      <v-table density="compact" class="bg-surface rounded border">
+                        <thead>
+                          <tr>
+                            <th class="text-left font-weight-bold">Tên thuốc</th>
+                            <th class="text-left font-weight-bold">Số lượng</th>
+                            <th class="text-left font-weight-bold">Đơn giá</th>
+                            <th class="text-left font-weight-bold">Liều dùng</th>
+                            <th class="text-left font-weight-bold">Thành tiền</th>
+                            <th class="text-left font-weight-bold">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(item, idx) in activeConsultation.prescription" :key="idx">
+                            <td>{{ item.drugName }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ formatMoney(item.price) }}đ</td>
+                            <td>{{ item.dosage }}</td>
+                            <td>{{ formatMoney(item.price * item.quantity) }}đ</td>
+                            <td>
+                              <v-btn color="error" variant="text" icon="mdi-trash-can-outline" size="small" @click="removeDrugFromPrescription(idx)" />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </v-table>
+                    </div>
+
+                    <v-btn type="submit" color="primary" block size="large" class="font-weight-bold mt-6" :loading="loading">
+                      Lưu bệnh án, Kê đơn & Hoàn thành khám
+                    </v-btn>
+                  </v-form>
                 </v-card>
               </v-col>
             </v-row>
           </v-window-item>
 
-          <!-- 4. TV QUEUE SCREEN TAB -->
+          <!-- 4. PHARMACY & BILLING TAB (Dược sĩ & Thu ngân) -->
+          <v-window-item value="pharmacy">
+            <v-row>
+              <!-- Thu viện phí -->
+              <v-col cols="12" md="6">
+                <v-card border flat class="bg-surface pa-6 mb-6">
+                  <div class="text-h6 font-weight-bold mb-4 text-primary">Danh sách hóa đơn viện phí phòng khám</div>
+                  
+                  <v-alert v-if="bills.length === 0" type="info" variant="tonal">
+                    Không có hóa đơn thanh toán nào hôm nay.
+                  </v-alert>
+
+                  <v-list v-else bg-color="transparent" class="pa-0">
+                    <v-card v-for="b in bills" :key="b.id" border flat class="mb-3 pa-4">
+                      <div class="d-flex justify-space-between align-center mb-2">
+                        <span class="font-weight-bold">{{ b.patientName }}</span>
+                        <v-chip size="small" :color="b.status === 'DaThanhToan' ? 'success' : 'warning'">
+                          {{ b.status === 'DaThanhToan' ? 'Đã Thanh Toán' : 'Chờ Thanh Toán' }}
+                        </v-chip>
+                      </div>
+                      <div class="text-caption text-grey mb-1">Điện thoại: {{ b.patientPhone }}</div>
+                      <div class="text-caption text-grey mb-2">Ngày khám: {{ formatDate(b.date) }}</div>
+                      
+                      <v-divider class="my-2" />
+                      
+                      <div class="d-flex justify-space-between text-body-2 mb-1">
+                        <span>Phí khám bệnh:</span>
+                        <span>{{ formatMoney(b.consultationFee) }}đ</span>
+                      </div>
+                      <div class="d-flex justify-space-between text-body-2 mb-1">
+                        <span>Tiền thuốc đơn thuốc:</span>
+                        <span>{{ formatMoney(b.medicationFee) }}đ</span>
+                      </div>
+                      <div class="d-flex justify-space-between font-weight-bold text-subtitle-1 my-2">
+                        <span>Tổng tiền:</span>
+                        <span class="text-success">{{ formatMoney(b.totalAmount) }}đ</span>
+                      </div>
+
+                      <v-btn
+                        v-if="b.status === 'ChuaThanhToan'"
+                        color="success"
+                        block
+                        size="small"
+                        class="mt-2 font-weight-bold"
+                        @click="payBill(b.id)"
+                      >
+                        Xác nhận thu viện phí
+                      </v-btn>
+                    </v-card>
+                  </v-list>
+                </v-card>
+              </v-col>
+
+              <!-- Quản lý kho thuốc -->
+              <v-col cols="12" md="6">
+                <v-card border flat class="bg-surface pa-6 mb-6">
+                  <div class="text-h6 font-weight-bold mb-4 text-primary">Quản lý kho thuốc hiện tại</div>
+                  
+                  <!-- Form nhập thuốc mới -->
+                  <div class="bg-slate-900 pa-4 rounded-lg border mb-4">
+                    <div class="text-subtitle-2 font-weight-bold mb-2 text-grey-lighten-1">Nhập thêm thuốc mới vào kho</div>
+                    <v-form @submit.prevent="addNewDrug">
+                      <v-row dense>
+                        <v-col cols="12" sm="6">
+                          <v-text-field
+                            v-model="drugForm.name"
+                            label="Tên thuốc"
+                            variant="outlined"
+                            density="comfortable"
+                            required
+                          />
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                          <v-text-field
+                            v-model="drugForm.activeIngredient"
+                            label="Hoạt chất chính"
+                            variant="outlined"
+                            density="comfortable"
+                          />
+                        </v-col>
+                        <v-col cols="4">
+                          <v-text-field
+                            v-model="drugForm.unit"
+                            label="Đơn vị"
+                            variant="outlined"
+                            density="comfortable"
+                            required
+                          />
+                        </v-col>
+                        <v-col cols="4">
+                          <v-text-field
+                            v-model.number="drugForm.price"
+                            label="Giá bán"
+                            type="number"
+                            variant="outlined"
+                            density="comfortable"
+                            required
+                          />
+                        </v-col>
+                        <v-col cols="4">
+                          <v-text-field
+                            v-model.number="drugForm.stock"
+                            label="Tồn kho"
+                            type="number"
+                            variant="outlined"
+                            density="comfortable"
+                            required
+                          />
+                        </v-col>
+                      </v-row>
+                      <v-btn type="submit" color="primary" block size="small" class="font-weight-bold mt-2">
+                        Nhập kho thuốc
+                      </v-btn>
+                    </v-form>
+                  </div>
+
+                  <!-- Danh sách thuốc tồn kho -->
+                  <v-table density="compact" class="bg-surface rounded border">
+                    <thead>
+                      <tr>
+                        <th class="text-left font-weight-bold">Tên thuốc</th>
+                        <th class="text-left font-weight-bold">Đơn vị</th>
+                        <th class="text-left font-weight-bold">Đơn giá</th>
+                        <th class="text-left font-weight-bold">Tồn kho</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="d in drugs" :key="d.id">
+                        <td>
+                          <div><strong>{{ d.name }}</strong></div>
+                          <div class="text-caption text-grey">{{ d.activeIngredient }}</div>
+                        </td>
+                        <td>{{ d.unit }}</td>
+                        <td>{{ formatMoney(d.price) }}đ</td>
+                        <td>
+                          <v-chip size="small" :color="d.stock > 100 ? 'success' : 'error'">
+                            {{ d.stock }}
+                          </v-chip>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-window-item>
+
+          <!-- 5. ADMIN PORTAL TAB (Quản trị Bác sĩ & Lịch hẹn của Nhóm 1) -->
+          <v-window-item value="admin">
+            <v-row>
+              <!-- Thêm bác sĩ trực ca -->
+              <v-col cols="12" md="4">
+                <v-card border flat class="bg-surface pa-6 mb-6">
+                  <div class="text-h6 font-weight-bold mb-4 text-primary">Thêm Bác sĩ trực ca</div>
+                  <v-form @submit.prevent="addNewDoctor">
+                    <v-text-field
+                      v-model="doctorForm.fullName"
+                      label="Họ và tên Bác sĩ"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-3"
+                      required
+                    />
+                    <v-text-field
+                      v-model="doctorForm.specialty"
+                      label="Chuyên khoa"
+                      placeholder="Nội khoa, Da liễu, Nhi khoa, Răng Hàm Mặt"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-3"
+                      required
+                    />
+                    <v-text-field
+                      v-model="doctorForm.qualifications"
+                      label="Học vị bằng cấp"
+                      placeholder="Thạc sĩ Bác sĩ, Tiến sĩ Y khoa"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-3"
+                      required
+                    />
+                    <v-text-field
+                      v-model.number="doctorForm.consultationFee"
+                      label="Phí khám bệnh"
+                      type="number"
+                      variant="outlined"
+                      density="comfortable"
+                      class="mb-4"
+                      required
+                    />
+                    <v-btn type="submit" color="primary" block size="large" class="font-weight-bold" :loading="loading">
+                      Lưu thông tin bác sĩ
+                    </v-btn>
+                  </v-form>
+                </v-card>
+              </v-col>
+
+              <!-- Danh sách Bác sĩ hiện tại -->
+              <v-col cols="12" md="8">
+                <v-card border flat class="bg-surface pa-6 mb-6">
+                  <div class="text-h6 font-weight-bold mb-4 text-primary">Danh sách bác sĩ phòng khám</div>
+                  
+                  <v-table density="comfortable" class="bg-surface rounded border">
+                    <thead>
+                      <tr>
+                        <th class="text-left font-weight-bold">Bác sĩ</th>
+                        <th class="text-left font-weight-bold">Chuyên khoa</th>
+                        <th class="text-left font-weight-bold">Bằng cấp</th>
+                        <th class="text-left font-weight-bold">Phí khám</th>
+                        <th class="text-left font-weight-bold">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="doc in doctors" :key="doc.id">
+                        <td class="font-weight-bold">{{ doc.fullName }}</td>
+                        <td>
+                          <v-chip color="primary" size="small">{{ doc.specialty }}</v-chip>
+                        </td>
+                        <td>{{ doc.qualifications }}</td>
+                        <td class="text-success font-weight-bold">{{ formatMoney(doc.consultationFee) }}đ</td>
+                        <td>
+                          <v-chip size="small" :color="doc.isActive ? 'success' : 'error'">
+                            {{ doc.isActive ? 'Đang trực' : 'Nghỉ trực' }}
+                          </v-chip>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-window-item>
+
+          <!-- 6. TV QUEUE SCREEN TAB -->
           <v-window-item value="tv">
             <v-card border flat class="bg-surface pa-8">
               <div class="d-flex align-center justify-space-between mb-6">
@@ -611,6 +1071,7 @@
             </v-card>
           </v-window-item>
         </v-window>
+      </div> <!-- Đóng thẻ div v-else -->
       </v-container>
     </v-main>
   </v-app>
@@ -625,8 +1086,43 @@ export default {
     // API Configurations
     const menuOpen = ref(false)
     const apiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
-    const jwtToken = ref(localStorage.getItem('clinic_jwt_token') || '')
-    const activeRole = ref('')
+    
+    // Mock Mode & Auth Session
+    const isMockMode = ref(true)
+    const currentUser = ref({
+      username: localStorage.getItem('clinic_user_name') || '',
+      role: localStorage.getItem('clinic_user_role') || '',
+      token: localStorage.getItem('clinic_jwt_token') || ''
+    })
+
+    const jwtToken = computed({
+      get: () => currentUser.value.token,
+      set: (val) => {
+        currentUser.value.token = val
+        if (val) {
+          localStorage.setItem('clinic_jwt_token', val)
+        } else {
+          localStorage.removeItem('clinic_jwt_token')
+        }
+      }
+    })
+
+    const activeRole = computed({
+      get: () => currentUser.value.role,
+      set: (val) => {
+        currentUser.value.role = val
+        if (val) {
+          localStorage.setItem('clinic_user_role', val)
+        } else {
+          localStorage.removeItem('clinic_user_role')
+        }
+      }
+    })
+
+    const loginForm = ref({
+      username: '',
+      password: ''
+    })
 
     // App state
     const activeTab = ref('booking')
@@ -638,12 +1134,116 @@ export default {
     })
 
     // Data lists
-    const doctors = ref([])
+    const doctors = ref([
+      {
+        id: 'd1d11111-1111-1111-1111-111111111111',
+        fullName: 'Nguyễn Văn An',
+        specialty: 'Nội khoa',
+        qualifications: 'Thạc sĩ Bác sĩ',
+        consultationFee: 150000,
+        isActive: true
+      },
+      {
+        id: 'd2d22222-2222-2222-2222-222222222222',
+        fullName: 'Trần Thị Bình',
+        specialty: 'Nhi khoa',
+        qualifications: 'Bác sĩ Chuyên khoa 1',
+        consultationFee: 200000,
+        isActive: true
+      },
+      {
+        id: 'd3d33333-3333-3333-3333-333333333333',
+        fullName: 'Lê Hoàng Nam',
+        specialty: 'Da liễu',
+        qualifications: 'Bác sĩ Chuyên khoa 2',
+        consultationFee: 250000,
+        isActive: true
+      },
+      {
+        id: 'd4d44444-4444-4444-4444-444444444444',
+        fullName: 'Phạm Minh Đức',
+        specialty: 'Răng Hàm Mặt',
+        qualifications: 'Tiến sĩ Y khoa',
+        consultationFee: 300000,
+        isActive: true
+      }
+    ])
     const specialties = ref([])
     const selectedSpecialty = ref(null)
     const availableSchedules = ref([])
     const pendingAppointments = ref([])
     const recentTicket = ref(null)
+
+    // Nhóm 3: Kho thuốc & Viện phí Mock
+    const drugs = ref([
+      { id: 'dr1', name: 'Paracetamol 500mg', activeIngredient: 'Paracetamol', unit: 'Viên', price: 2000, stock: 1500 },
+      { id: 'dr2', name: 'Amoxicillin 500mg', activeIngredient: 'Amoxicillin', unit: 'Viên', price: 5000, stock: 800 },
+      { id: 'dr3', name: 'Ibuprofen 400mg', activeIngredient: 'Ibuprofen', unit: 'Viên', price: 3500, stock: 600 },
+      { id: 'dr4', name: 'Decolgen Forte', activeIngredient: 'Paracetamol + Phenylephrine', unit: 'Vỉ', price: 15000, stock: 120 },
+      { id: 'dr5', name: 'Cetirizine 10mg', activeIngredient: 'Cetirizine Hydrochloride', unit: 'Viên', price: 4000, stock: 450 }
+    ])
+
+    const bills = ref([
+      {
+        id: 'b1',
+        patientName: 'Lê Văn Luyện',
+        patientPhone: '0987654321',
+        appointmentId: 'ap1',
+        consultationFee: 150000,
+        medicationFee: 30000,
+        totalAmount: 180000,
+        status: 'ChuaThanhToan',
+        date: new Date().toISOString().split('T')[0]
+      }
+    ])
+
+    const medicalRecords = ref([
+      {
+        id: 'mr1',
+        patientName: 'Lê Văn Luyện',
+        patientPhone: '0987654321',
+        date: '2026-06-15',
+        symptoms: 'Đau đầu, sốt nhẹ',
+        diagnosis: 'Cảm cúm',
+        notes: 'Uống thuốc đều đặn và nghỉ ngơi',
+        prescription: [
+          { drugId: 'dr1', drugName: 'Paracetamol 500mg', quantity: 10, price: 2000, dosage: 'Uống ngày 2 lần, mỗi lần 1 viên sau ăn' }
+        ]
+      }
+    ])
+
+    // Forms
+    const drugForm = ref({
+      name: '',
+      activeIngredient: '',
+      unit: 'Viên',
+      price: 0,
+      stock: 0
+    })
+
+    const doctorForm = ref({
+      fullName: '',
+      specialty: '',
+      qualifications: '',
+      consultationFee: 100000
+    })
+
+    // Consulting Patient (Doctor portal)
+    const activeConsultation = ref({
+      queueId: '',
+      patientName: '',
+      patientPhone: '',
+      queueNumber: 0,
+      symptoms: '',
+      diagnosis: '',
+      notes: '',
+      prescription: [],
+      currentDrug: {
+        drugId: '',
+        quantity: 1,
+        dosage: ''
+      }
+    })
     
     // Search Receptionist
     const searchQuery = ref({
@@ -709,14 +1309,16 @@ export default {
 
     // Fetch initial data
     const fetchDoctors = async () => {
+      if (isMockMode.value) {
+        specialties.value = [...new Set(doctors.value.map(d => d.specialty))]
+        return
+      }
       try {
         const url = `${apiUrl.value}/doctors?isActive=true`
         const res = await fetch(url)
-        if (!res.ok) throw new Error('Không thể tải danh sách bác sĩ')
+        if (!res.ok) throw new Error('Không thể tải danh sách bác sĩ từ máy chủ')
         const data = await res.json()
         doctors.value = data
-        
-        // Extract unique specialties
         specialties.value = [...new Set(data.map(d => d.specialty))]
       } catch (err) {
         showAlert(err.message, 'error')
@@ -751,6 +1353,40 @@ export default {
       bookingForm.value.scheduleId = ''
       availableSchedules.value = []
       
+      if (isMockMode.value) {
+        // Tự sinh lịch làm việc 3 ngày tới cho bác sĩ được chọn ở chế độ giả lập
+        const today = new Date()
+        const mockShifts = []
+        for (let i = 1; i <= 3; i++) {
+          const targetDay = new Date(today)
+          targetDay.setDate(today.getDate() + i)
+          const dateStr = targetDay.toISOString().split('T')[0]
+          
+          mockShifts.push({
+            id: `sch_mock_${doc.id}_${i}_1`,
+            doctorId: doc.id,
+            date: dateStr,
+            shift: 'Sang',
+            startTime: '08:00:00',
+            endTime: '11:30:00',
+            maxPatients: 12,
+            currentBookings: 2
+          })
+          mockShifts.push({
+            id: `sch_mock_${doc.id}_${i}_2`,
+            doctorId: doc.id,
+            date: dateStr,
+            shift: 'Chieu',
+            startTime: '13:30:00',
+            endTime: '17:00:00',
+            maxPatients: 10,
+            currentBookings: 4
+          })
+        }
+        availableSchedules.value = mockShifts
+        return
+      }
+
       try {
         const url = `${apiUrl.value}/schedules/available?doctorId=${doc.id}`
         const res = await fetch(url)
@@ -765,7 +1401,6 @@ export default {
     const selectSchedule = (sch) => {
       bookingForm.value.scheduleId = sch.id
       bookingForm.value.appointmentDate = sch.date
-      // auto set time slot default start time
       bookingForm.value.timeSlot = sch.startTime
     }
 
@@ -773,6 +1408,38 @@ export default {
     const bookAppointment = async () => {
       try {
         loading.value = true
+        const matchedDoc = doctors.value.find(d => d.id === bookingForm.value.doctorId)
+        
+        if (isMockMode.value) {
+          const mockTicket = {
+            id: 'app_mock_' + Date.now(),
+            appointmentCode: 'CLINIC' + Math.floor(100000 + Math.random() * 900000),
+            patientName: bookingForm.value.patientName,
+            patientPhone: bookingForm.value.patientPhone,
+            patientEmail: bookingForm.value.patientEmail,
+            appointmentDate: bookingForm.value.appointmentDate,
+            timeSlot: bookingForm.value.timeSlot,
+            doctorId: bookingForm.value.doctorId,
+            doctorName: matchedDoc ? matchedDoc.fullName : 'Bác sĩ phòng khám',
+            specialty: matchedDoc ? matchedDoc.specialty : 'Nội khoa',
+            consultationFee: matchedDoc ? matchedDoc.consultationFee : 150000,
+            status: 'ChoXacNhan',
+            notes: bookingForm.value.notes
+          }
+
+          // Đẩy vào danh sách chờ tiếp nhận giả lập
+          pendingAppointments.value.unshift(mockTicket)
+          recentTicket.value = mockTicket
+          showAlert('Đăng ký đặt lịch khám thành công (Chế độ giả lập)!', 'success')
+          
+          bookingForm.value = {
+            patientName: '', patientPhone: '', patientEmail: '',
+            appointmentDate: '', timeSlot: '', doctorId: '',
+            scheduleId: '', notes: ''
+          }
+          return
+        }
+
         const url = `${apiUrl.value}/appointments/book`
         const res = await fetch(url, {
           method: 'POST',
@@ -790,26 +1457,13 @@ export default {
         recentTicket.value = data
         showAlert('Đăng ký đặt lịch thành công!', 'success')
         
-        // Reset form
         bookingForm.value = {
-          patientName: '',
-          patientPhone: '',
-          patientEmail: '',
-          appointmentDate: '',
-          timeSlot: '',
-          doctorId: '',
-          scheduleId: '',
-          notes: ''
+          patientName: '', patientPhone: '', patientEmail: '',
+          appointmentDate: '', timeSlot: '', doctorId: '',
+          scheduleId: '', notes: ''
         }
         
-        // Refresh doctors/schedules
         await fetchDoctors()
-        
-        // If doctor was selected, reload schedules
-        if (bookingForm.value.doctorId) {
-          const matchedDoc = doctors.value.find(d => d.id === bookingForm.value.doctorId)
-          if (matchedDoc) selectDoctor(matchedDoc)
-        }
       } catch (err) {
         showAlert(err.message, 'error')
       } finally {
@@ -819,6 +1473,42 @@ export default {
 
     // Receptionist Functions
     const fetchPendingAppointments = async () => {
+      if (isMockMode.value) {
+        // Nếu danh sách rỗng, khởi tạo một số cuộc hẹn chờ tiếp nhận mẫu
+        if (pendingAppointments.value.length === 0) {
+          pendingAppointments.value = [
+            {
+              id: 'ap_mock_1',
+              appointmentCode: 'CLINIC741258',
+              patientName: 'Phạm Thị Thảo',
+              patientPhone: '0901234567',
+              patientEmail: 'thao@gmail.com',
+              appointmentDate: new Date().toISOString().split('T')[0],
+              timeSlot: '08:30:00',
+              doctorId: 'd1d11111-1111-1111-1111-111111111111',
+              doctorName: 'Nguyễn Văn An',
+              specialty: 'Nội khoa',
+              status: 'ChoXacNhan',
+              notes: 'Bị ho và sốt kéo dài'
+            },
+            {
+              id: 'ap_mock_2',
+              appointmentCode: 'CLINIC963852',
+              patientName: 'Trần Minh Hoàng',
+              patientPhone: '0987654321',
+              patientEmail: 'hoang@gmail.com',
+              appointmentDate: new Date().toISOString().split('T')[0],
+              timeSlot: '14:00:00',
+              doctorId: 'd2d22222-2222-2222-2222-222222222222',
+              doctorName: 'Trần Thị Bình',
+              specialty: 'Nhi khoa',
+              status: 'ChoXacNhan',
+              notes: 'Khám dinh dưỡng định kỳ'
+            }
+          ]
+        }
+        return
+      }
       try {
         loading.value = true
         const url = `${apiUrl.value}/appointments/pending`
@@ -844,6 +1534,39 @@ export default {
     const confirmAppointment = async (id) => {
       try {
         loading.value = true
+        
+        if (isMockMode.value) {
+          const idx = pendingAppointments.value.findIndex(p => p.id === id)
+          if (idx !== -1) {
+            const app = pendingAppointments.value[idx]
+            pendingAppointments.value.splice(idx, 1)
+
+            // Tính số thứ tự hàng chờ
+            const nextQueueNum = doctorQueue.value.length + 1
+            const newQueueItem = {
+              id: 'q_' + Date.now(),
+              appointmentId: app.id,
+              doctorId: app.doctorId,
+              doctorName: app.doctorName,
+              patientName: app.patientName,
+              patientPhone: app.patientPhone,
+              queueNumber: nextQueueNum,
+              checkInTime: new Date().toISOString(),
+              status: 'ChoKham',
+              notes: app.notes
+            }
+            
+            doctorQueue.value.push(newQueueItem)
+            lastConfirmedApp.value = { ...app, queueNumber: nextQueueNum }
+            showAlert(`Đã tiếp nhận bệnh nhân: ${app.patientName}. Số thứ tự khám: ${nextQueueNum}`, 'success')
+            
+            if (searchResults.value) {
+              searchResults.value = searchResults.value.filter(s => s.id !== id)
+            }
+          }
+          return
+        }
+
         const url = `${apiUrl.value}/queue/confirm-appointment/${id}`
         const headers = {
           'Content-Type': 'application/json'
@@ -864,10 +1587,8 @@ export default {
         showAlert(`Đã xác nhận thành công bệnh nhân: ${data.patientName}. Cấp số: ${data.queueNumber}`, 'success')
         
         if (searchResults.value) {
-          // If searching, refresh search
           searchAppointments()
         } else {
-          // Refresh list
           fetchPendingAppointments()
         }
       } catch (err) {
@@ -882,6 +1603,15 @@ export default {
 
       try {
         loading.value = true
+        if (isMockMode.value) {
+          pendingAppointments.value = pendingAppointments.value.filter(p => p.id !== id)
+          showAlert('Đã hủy lịch hẹn thành công (Giả lập)', 'success')
+          if (searchResults.value) {
+            searchResults.value = searchResults.value.filter(s => s.id !== id)
+          }
+          return
+        }
+
         const url = `${apiUrl.value}/appointments/${id}/cancel`
         const res = await fetch(url, {
           method: 'PUT'
@@ -912,6 +1642,15 @@ export default {
         }
 
         loading.value = true
+        if (isMockMode.value) {
+          const list = [...pendingAppointments.value]
+          searchResults.value = list.filter(p => 
+            (code && p.appointmentCode.toLowerCase().includes(code.toLowerCase())) ||
+            (phone && p.patientPhone.includes(phone))
+          )
+          return
+        }
+
         let url = `${apiUrl.value}/appointments/search?`
         if (code) url += `code=${code}&`
         if (phone) url += `phone=${phone}`
@@ -938,6 +1677,11 @@ export default {
     const fetchDoctorActiveQueue = async () => {
       if (!doctorPortal.value.doctorId) return
       
+      if (isMockMode.value) {
+        // Tải hàng chờ giả lập lọc theo bác sĩ
+        return
+      }
+
       try {
         const url = `${apiUrl.value}/queue/active?doctorId=${doctorPortal.value.doctorId}`
         const res = await fetch(url)
@@ -950,8 +1694,11 @@ export default {
     }
 
     const sortedDoctorQueue = computed(() => {
-      // Show DangKham first, then ChoKham sorted by QueueNumber
-      return [...doctorQueue.value].sort((a, b) => {
+      const list = isMockMode.value 
+        ? doctorQueue.value.filter(q => q.doctorId === doctorPortal.value.doctorId)
+        : doctorQueue.value
+      
+      return [...list].sort((a, b) => {
         if (a.status === 'DangKham' && b.status !== 'DangKham') return -1
         if (a.status !== 'DangKham' && b.status === 'DangKham') return 1
         return a.queueNumber - b.queueNumber
@@ -961,6 +1708,22 @@ export default {
     const updateQueueStatus = async (queueId, statusCode) => {
       try {
         loading.value = true
+        
+        if (isMockMode.value) {
+          const item = doctorQueue.value.find(q => q.id === queueId)
+          if (item) {
+            const statusMap = { 2: 'DangKham', 3: 'DaHuy', 4: 'DaKham' }
+            item.status = statusMap[statusCode] || item.status
+            showAlert('Cập nhật trạng thái khám bệnh nhân (Giả lập) thành công', 'success')
+            
+            // Nếu là gọi khám, tự động cập nhật activeConsultation
+            if (statusCode === 2) {
+              selectConsultingPatient(item)
+            }
+          }
+          return
+        }
+
         const url = `${apiUrl.value}/queue/${queueId}/status`
         const headers = {
           'Content-Type': 'application/json'
@@ -980,6 +1743,12 @@ export default {
         if (!res.ok) throw new Error('Không thể cập nhật trạng thái hàng chờ')
 
         showAlert('Cập nhật trạng thái khám thành công', 'success')
+        
+        // Nếu là gọi khám, tự động chọn bệnh nhân
+        if (statusCode === 2) {
+          const item = doctorQueue.value.find(q => q.id === queueId)
+          if (item) selectConsultingPatient(item)
+        }
         fetchDoctorActiveQueue()
       } catch (err) {
         showAlert(err.message, 'error')
@@ -990,6 +1759,11 @@ export default {
 
     // TV Queue Functions
     const fetchTvQueue = async () => {
+      if (isMockMode.value) {
+        // Sử dụng toàn bộ hàng chờ ảo doctorQueue ở chế độ giả lập
+        tvQueue.value = doctorQueue.value
+        return
+      }
       try {
         const url = `${apiUrl.value}/queue/active`
         const res = await fetch(url)
@@ -1073,6 +1847,346 @@ export default {
       }
     }
 
+    const handleLogin = async () => {
+      try {
+        loading.value = true
+        if (isMockMode.value) {
+          // Giả lập login nhanh dựa theo username
+          const name = loginForm.value.username.toLowerCase()
+          const role = name.includes('admin') ? 'Admin' :
+                       name.includes('doc') ? 'Doctor' :
+                       name.includes('recep') ? 'Receptionist' : 'Patient'
+          
+          currentUser.value = {
+            username: loginForm.value.username,
+            role: role,
+            token: 'mock_jwt_token_for_' + role.toLowerCase()
+          }
+          localStorage.setItem('clinic_user_name', currentUser.value.username)
+          localStorage.setItem('clinic_user_role', currentUser.value.role)
+          localStorage.setItem('clinic_jwt_token', currentUser.value.token)
+          showAlert('Đăng nhập giả lập thành công!', 'success')
+        } else {
+          // Gọi API xác thực thực tế tới Nhóm 6 qua Gateway
+          const base = apiUrl.value.replace('/appointments-service', '')
+          const url = `${base}/pharmacy-billing-service/auth/login`
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(loginForm.value)
+          })
+          if (!res.ok) throw new Error('Đăng nhập thất bại. Tài khoản hoặc mật khẩu không chính xác.')
+          const data = await res.json()
+          currentUser.value = {
+            username: data.username || loginForm.value.username,
+            role: data.role,
+            token: data.token
+          }
+          localStorage.setItem('clinic_user_name', currentUser.value.username)
+          localStorage.setItem('clinic_user_role', currentUser.value.role)
+          localStorage.setItem('clinic_jwt_token', currentUser.value.token)
+          showAlert('Đăng nhập liên thông qua API Gateway thành công!', 'success')
+        }
+        loginForm.value = { username: '', password: '' }
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const handleLogout = () => {
+      currentUser.value = { username: '', role: '', token: '' }
+      localStorage.removeItem('clinic_user_name')
+      localStorage.removeItem('clinic_user_role')
+      localStorage.removeItem('clinic_jwt_token')
+      showAlert('Đã đăng xuất khỏi hệ thống.', 'info')
+    }
+
+    const quickLogin = async (role) => {
+      if (isMockMode.value) {
+        currentUser.value = {
+          username: 'Demo_' + role,
+          role: role,
+          token: 'mock_jwt_token_for_' + role.toLowerCase()
+        }
+        localStorage.setItem('clinic_user_name', currentUser.value.username)
+        localStorage.setItem('clinic_user_role', currentUser.value.role)
+        localStorage.setItem('clinic_jwt_token', currentUser.value.token)
+        showAlert(`Đăng nhập thành công với vai trò ${role} (Giả lập)`, 'success')
+      } else {
+        try {
+          loading.value = true
+          // Gọi API TestAuth của nhóm 5 để sinh token nhanh
+          const url = `${apiUrl.value}/testauth/token?role=${role}`
+          const res = await fetch(url)
+          if (!res.ok) throw new Error('Không thể lấy Token thử nghiệm từ máy chủ')
+          const data = await res.json()
+          currentUser.value = {
+            username: 'Test_' + role,
+            role: role,
+            token: data.token
+          }
+          localStorage.setItem('clinic_user_name', currentUser.value.username)
+          localStorage.setItem('clinic_user_role', currentUser.value.role)
+          localStorage.setItem('clinic_jwt_token', currentUser.value.token)
+          showAlert(`Đăng nhập thành công với vai trò ${role} (Token từ API!)`, 'success')
+        } catch (err) {
+          showAlert(err.message, 'error')
+        } finally {
+          loading.value = false
+        }
+      }
+    }
+
+    const selectConsultingPatient = (qItem) => {
+      activeConsultation.value = {
+        queueId: qItem.id,
+        patientName: qItem.patientName,
+        patientPhone: qItem.patientPhone || '0900000000',
+        queueNumber: qItem.queueNumber,
+        symptoms: qItem.notes || '',
+        diagnosis: '',
+        notes: '',
+        prescription: [],
+        currentDrug: {
+          drugId: '',
+          quantity: 1,
+          dosage: ''
+        }
+      }
+      showAlert(`Bắt đầu ghi nhận bệnh án cho bệnh nhân: ${qItem.patientName}`, 'info')
+    }
+
+    const addDrugToPrescription = () => {
+      const cur = activeConsultation.value.currentDrug
+      if (!cur.drugId) {
+        showAlert('Vui lòng chọn thuốc!', 'warning')
+        return
+      }
+      const drug = drugs.value.find(d => d.id === cur.drugId)
+      if (!drug) return
+      
+      if (drug.stock < cur.quantity) {
+        showAlert(`Không đủ thuốc trong kho. Tồn kho hiện tại: ${drug.stock}`, 'error')
+        return
+      }
+
+      activeConsultation.value.prescription.push({
+        drugId: drug.id,
+        drugName: drug.name,
+        quantity: cur.quantity,
+        price: drug.price,
+        dosage: cur.dosage || 'Uống theo chỉ định của bác sĩ'
+      })
+
+      activeConsultation.value.currentDrug = {
+        drugId: '',
+        quantity: 1,
+        dosage: ''
+      }
+    }
+
+    const removeDrugFromPrescription = (idx) => {
+      activeConsultation.value.prescription.splice(idx, 1)
+    }
+
+    const onDrugSelected = (drugId) => {
+      const drug = drugs.value.find(d => d.id === drugId)
+      if (drug) {
+        activeConsultation.value.currentDrug.dosage = `Uống ngày 2 lần, mỗi lần 1 ${drug.unit} sau ăn`
+      }
+    }
+
+    const viewPatientHistory = (phone) => {
+      const history = medicalRecords.value.filter(mr => mr.patientPhone === phone)
+      if (history.length === 0) {
+        showAlert('Không tìm thấy lịch sử khám bệnh cũ của bệnh nhân này.', 'info')
+      } else {
+        let msg = `Lịch sử bệnh án (${history.length} lần khám trước):\n`
+        history.forEach((h) => {
+          msg += `[${h.date}] Triệu chứng: ${h.symptoms} -> Chẩn đoán: ${h.diagnosis}. Đơn thuốc: ${h.prescription.map(p => p.drugName).join(', ')}\n`
+        })
+        showAlert(msg, 'success')
+      }
+    }
+
+    const submitConsultation = async () => {
+      try {
+        loading.value = true
+        const prescriptionData = activeConsultation.value.prescription
+        const medFee = prescriptionData.reduce((total, item) => total + (item.price * item.quantity), 0)
+        const doctor = doctors.value.find(d => d.id === doctorPortal.value.doctorId)
+        const consultFee = doctor ? doctor.consultationFee : 150000
+
+        if (isMockMode.value) {
+          // Lưu bệnh án giả lập
+          const newRecord = {
+            id: 'mr_' + Date.now(),
+            patientName: activeConsultation.value.patientName,
+            patientPhone: activeConsultation.value.patientPhone,
+            date: new Date().toISOString().split('T')[0],
+            symptoms: activeConsultation.value.symptoms,
+            diagnosis: activeConsultation.value.diagnosis,
+            notes: activeConsultation.value.notes,
+            prescription: [...prescriptionData]
+          }
+          medicalRecords.value.unshift(newRecord)
+
+          // Sinh hóa đơn viện phí
+          const newBill = {
+            id: 'b_' + Date.now(),
+            patientName: activeConsultation.value.patientName,
+            patientPhone: activeConsultation.value.patientPhone,
+            appointmentId: activeConsultation.value.queueId,
+            consultationFee: consultFee,
+            medicationFee: medFee,
+            totalAmount: consultFee + medFee,
+            status: 'ChuaThanhToan',
+            date: new Date().toISOString().split('T')[0]
+          }
+          bills.value.unshift(newBill)
+
+          // Trừ kho thuốc
+          prescriptionData.forEach(pItem => {
+            const drug = drugs.value.find(d => d.id === pItem.drugId)
+            if (drug) drug.stock = Math.max(0, drug.stock - pItem.quantity)
+          })
+
+          // Cập nhật trạng thái khám bệnh nhân trong queue
+          const queueItem = doctorQueue.value.find(q => q.id === activeConsultation.value.queueId)
+          if (queueItem) queueItem.status = 'DaKham'
+
+          showAlert('Khám bệnh hoàn tất! Đơn thuốc và Hóa đơn viện phí đã chuyển sang bộ phận Thu ngân.', 'success')
+        } else {
+          // Gọi API Nhóm 2 (Medical Record) qua Gateway
+          const base = apiUrl.value.replace('/appointments-service', '')
+          const urlRecord = `${base}/medical-records-service/medical-records`
+          const resRecord = await fetch(urlRecord, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser.value.token}`
+            },
+            body: JSON.stringify({
+              patientName: activeConsultation.value.patientName,
+              patientPhone: activeConsultation.value.patientPhone,
+              symptoms: activeConsultation.value.symptoms,
+              diagnosis: activeConsultation.value.diagnosis,
+              notes: activeConsultation.value.notes,
+              prescription: prescriptionData
+            })
+          })
+
+          if (!resRecord.ok) throw new Error('Không thể lưu bệnh án và kê đơn lên máy chủ Nhóm 4')
+
+          // Gọi API Nhóm 1 cập nhật hoàn thành khám
+          await updateQueueStatus(activeConsultation.value.queueId, 4)
+          showAlert('Khám bệnh và kê đơn thuốc liên thông thành công!', 'success')
+        }
+
+        // Reset form
+        activeConsultation.value = {
+          queueId: '',
+          patientName: '',
+          patientPhone: '',
+          queueNumber: 0,
+          symptoms: '',
+          diagnosis: '',
+          notes: '',
+          prescription: [],
+          currentDrug: { drugId: '', quantity: 1, dosage: '' }
+        }
+        
+        await fetchDoctorActiveQueue()
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const payBill = async (billId) => {
+      try {
+        loading.value = true
+        if (isMockMode.value) {
+          const bill = bills.value.find(b => b.id === billId)
+          if (bill) bill.status = 'DaThanhToan'
+          showAlert('Thu viện phí thành công (Giả lập)!', 'success')
+        } else {
+          // Gọi API Nhóm 3 (Pharmacy & Billing) qua Gateway
+          const base = apiUrl.value.replace('/appointments-service', '')
+          const url = `${base}/pharmacy-billing-service/bills/${billId}/pay`
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
+          })
+          if (!res.ok) throw new Error('Thanh toán hóa đơn viện phí thất bại ở máy chủ Nhóm 6')
+          
+          const bill = bills.value.find(b => b.id === billId)
+          if (bill) bill.status = 'DaThanhToan'
+          showAlert('Đã thu viện phí liên thông thành công!', 'success')
+        }
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const addNewDrug = () => {
+      const id = 'dr_' + Date.now()
+      drugs.value.push({
+        id,
+        name: drugForm.value.name,
+        activeIngredient: drugForm.value.activeIngredient,
+        unit: drugForm.value.unit,
+        price: drugForm.value.price,
+        stock: drugForm.value.stock
+      })
+      showAlert(`Đã thêm thuốc mới ${drugForm.value.name} vào kho thành công!`, 'success')
+      drugForm.value = { name: '', activeIngredient: '', unit: 'Viên', price: 0, stock: 0 }
+    }
+
+    const addNewDoctor = async () => {
+      try {
+        loading.value = true
+        const newDoc = {
+          id: 'doc_' + Guid.NewGuid(),
+          fullName: doctorForm.value.fullName,
+          specialty: doctorForm.value.specialty,
+          qualifications: doctorForm.value.qualifications,
+          consultationFee: doctorForm.value.consultationFee,
+          isActive: true
+        }
+
+        if (isMockMode.value) {
+          doctors.value.push(newDoc)
+          specialties.value = [...new Set(doctors.value.map(d => d.specialty))]
+          showAlert(`Đã thêm bác sĩ ${doctorForm.value.fullName} (Giả lập)`, 'success')
+        } else {
+          // Gọi API tạo bác sĩ thật Nhóm 1
+          const url = `${apiUrl.value}/doctors`
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser.value.token}`
+            },
+            body: JSON.stringify(newDoc)
+          })
+          if (!res.ok) throw new Error('Không thể thêm bác sĩ vào máy chủ')
+          await fetchDoctors()
+          showAlert(`Đã thêm bác sĩ ${doctorForm.value.fullName} thành công!`, 'success')
+        }
+        doctorForm.value = { fullName: '', specialty: '', qualifications: '', consultationFee: 100000 }
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+
     // Watch tab changes to auto-load data for the selected tab
     watch(activeTab, (newTab) => {
       if (newTab === 'reception' && jwtToken.value) {
@@ -1114,6 +2228,17 @@ export default {
       loading,
       alert,
       
+      // Mock & Auth
+      isMockMode,
+      currentUser,
+      loginForm,
+      drugs,
+      bills,
+      medicalRecords,
+      drugForm,
+      doctorForm,
+      activeConsultation,
+      
       // Data refs
       doctors,
       specialties,
@@ -1151,6 +2276,18 @@ export default {
       fetchTestToken,
       onFilterChange,
       applyConfiguration,
+      handleLogin,
+      handleLogout,
+      quickLogin,
+      selectConsultingPatient,
+      addDrugToPrescription,
+      removeDrugFromPrescription,
+      onDrugSelected,
+      viewPatientHistory,
+      submitConsultation,
+      payBill,
+      addNewDrug,
+      addNewDoctor,
       
       // Helpers
       formatMoney,
