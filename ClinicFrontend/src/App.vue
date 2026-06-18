@@ -29,6 +29,16 @@
             @keyup.enter="applyConfiguration"
           />
           <v-text-field
+            v-model="authApiUrl"
+            label="API Đăng Nhập (Nhóm 6)"
+            density="compact"
+            variant="outlined"
+            placeholder="http://26.71.15.204:5000/api"
+            hide-details
+            class="mb-3"
+            @keyup.enter="applyConfiguration"
+          />
+          <v-text-field
             v-model="jwtToken"
             label="JWT Token"
             density="compact"
@@ -43,18 +53,6 @@
           
           <v-divider class="my-2" />
           
-          <div class="text-subtitle-2 font-weight-bold mb-1">Đăng nhập nhanh (TestAuth)</div>
-          <v-row density="comfortable">
-            <v-col cols="4">
-              <v-btn block size="small" color="primary" @click="fetchTestToken('Admin')">Admin</v-btn>
-            </v-col>
-            <v-col cols="4">
-              <v-btn block size="small" color="secondary" @click="fetchTestToken('Receptionist')">Tiếp Tân</v-btn>
-            </v-col>
-            <v-col cols="4">
-              <v-btn block size="small" color="success" @click="fetchTestToken('Doctor')">Bác Sĩ</v-btn>
-            </v-col>
-          </v-row>
           <div v-if="activeRole" class="text-caption text-success mt-2">
             Đang chạy với vai trò: <strong>{{ activeRole }}</strong>
           </div>
@@ -100,32 +98,7 @@
               </v-btn>
             </v-form>
 
-            <v-divider class="my-4" />
 
-            <!-- Quick Demo Login -->
-            <div class="text-subtitle-2 font-weight-bold mb-2 text-center text-grey-lighten-1">Đăng nhập nhanh để Demo (BTL)</div>
-            <v-row dense class="mb-4">
-              <v-col cols="6">
-                <v-btn block variant="tonal" color="primary" size="small" class="font-weight-bold" @click="quickLogin('Admin')">
-                  <v-icon icon="mdi-shield-account" class="mr-1" /> Admin
-                </v-btn>
-              </v-col>
-              <v-col cols="6">
-                <v-btn block variant="tonal" color="success" size="small" class="font-weight-bold" @click="quickLogin('Doctor')">
-                  <v-icon icon="mdi-doctor" class="mr-1" /> Bác Sĩ
-                </v-btn>
-              </v-col>
-              <v-col cols="6">
-                <v-btn block variant="tonal" color="secondary" size="small" class="font-weight-bold" @click="quickLogin('Receptionist')">
-                  <v-icon icon="mdi-account-tie" class="mr-1" /> Tiếp Tân
-                </v-btn>
-              </v-col>
-              <v-col cols="6">
-                <v-btn block variant="tonal" color="info" size="small" class="font-weight-bold" @click="quickLogin('Patient')">
-                  <v-icon icon="mdi-account" class="mr-1" /> Bệnh Nhân
-                </v-btn>
-              </v-col>
-            </v-row>
 
             <div class="text-center">
               <v-btn variant="text" color="warning" size="small" @click="activeTab = 'tv'">
@@ -154,15 +127,7 @@
             </div>
             
             <div class="d-flex align-center">
-              <!-- Switch Mock Mode -->
-              <v-switch
-                v-model="isMockMode"
-                color="warning"
-                label="Chế độ giả lập (Mock API)"
-                hide-details
-                density="compact"
-                class="mr-6 font-weight-bold"
-              />
+
               <v-btn v-if="currentUser.token" variant="outlined" color="error" size="small" prepend-icon="mdi-logout" @click="handleLogout">
                 Đăng xuất
               </v-btn>
@@ -180,7 +145,7 @@
               Bệnh Nhân Đặt Lịch
             </v-tab>
             <!-- Tiếp tân: Thấy tiếp nhận & xếp hàng -->
-            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Admin'" value="reception" class="font-weight-bold">
+            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Nurse' || currentUser.role === 'Admin'" value="reception" class="font-weight-bold">
               <v-icon icon="mdi-clipboard-text-play" class="mr-2" />
               Quầy Tiếp Tân
             </v-tab>
@@ -190,7 +155,7 @@
               Phòng Khám Bác Sĩ
             </v-tab>
             <!-- Dược sĩ & Thu ngân (Tiếp tân/Thu ngân): Thấy Kho thuốc & viện phí -->
-            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Admin'" value="pharmacy" class="font-weight-bold">
+            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Nurse' || currentUser.role === 'Admin'" value="pharmacy" class="font-weight-bold">
               <v-icon icon="mdi-pill" class="mr-2" color="success" />
               Kho Thuốc & Viện Phí
             </v-tab>
@@ -1523,9 +1488,10 @@ export default {
     // API Configurations
     const menuOpen = ref(false)
     const apiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
+    const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
     
     // Mock Mode & Auth Session
-    const isMockMode = ref(true)
+    const isMockMode = ref(false)
     const currentUser = ref({
       username: localStorage.getItem('clinic_user_name') || '',
       role: localStorage.getItem('clinic_user_role') || '',
@@ -1563,6 +1529,61 @@ export default {
 
     // App state
     const activeTab = ref('booking')
+
+    // Helper giải mã JWT Token
+    const decodeJwt = (token) => {
+      try {
+        if (!token) return null
+        const parts = token.split('.')
+        if (parts.length !== 3) return null
+        
+        const payloadBase64 = parts[1]
+        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          window.atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        )
+        return JSON.parse(jsonPayload)
+      } catch (e) {
+        console.error('Lỗi giải mã JWT token:', e)
+        return null
+      }
+    }
+
+    const syncUserFromToken = (token) => {
+      if (!token) {
+        currentUser.value.role = ''
+        currentUser.value.username = ''
+        localStorage.removeItem('clinic_user_role')
+        localStorage.removeItem('clinic_user_name')
+        return false
+      }
+
+      const decoded = decodeJwt(token)
+      if (decoded) {
+        const role = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decoded['role']
+        const username = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || decoded['unique_name'] || decoded['sub'] || decoded['name']
+        
+        if (role) {
+          currentUser.value.role = role
+          currentUser.value.username = username || 'Người dùng JWT'
+          localStorage.setItem('clinic_user_role', role)
+          localStorage.setItem('clinic_user_name', currentUser.value.username)
+          
+          // Tự động chuyển tab mặc định tương ứng với vai trò của người dùng
+          if (activeTab.value === 'tv' || activeTab.value === 'booking') {
+            if (role === 'Admin') activeTab.value = 'admin'
+            else if (role === 'Doctor') activeTab.value = 'doctor'
+            else if (role === 'Receptionist' || role === 'Nurse') activeTab.value = 'reception'
+            else if (role === 'Patient') activeTab.value = 'booking'
+          }
+          return true
+        }
+      }
+      return false
+    }
     const loading = ref(false)
     const alert = ref({
       show: false,
@@ -2267,9 +2288,18 @@ export default {
 
     const applyConfiguration = () => {
       localStorage.setItem('clinic_api_url', apiUrl.value)
+      localStorage.setItem('clinic_auth_api_url', authApiUrl.value)
       localStorage.setItem('clinic_jwt_token', jwtToken.value)
       
-      showAlert('Đã áp dụng cấu hình và lưu vào hệ thống!', 'success')
+      const syncSuccess = syncUserFromToken(jwtToken.value)
+      if (syncSuccess) {
+        showAlert(`Đã áp dụng cấu hình, giải mã vai trò thành công: ${currentUser.value.role}!`, 'success')
+      } else if (jwtToken.value) {
+        showAlert('Đã áp dụng cấu hình, nhưng không thể giải mã vai trò từ JWT token!', 'warning')
+      } else {
+        showAlert('Đã áp dụng cấu hình API URL!', 'success')
+      }
+      
       menuOpen.value = false
 
       // Tự động reload lại dữ liệu tương ứng của tab đang hoạt động để người dùng thấy ngay kết quả
@@ -2304,9 +2334,8 @@ export default {
           localStorage.setItem('clinic_jwt_token', currentUser.value.token)
           showAlert('Đăng nhập giả lập thành công!', 'success')
         } else {
-          // Gọi API xác thực thực tế tới Nhóm 6 qua Gateway
-          const base = apiUrl.value.replace('/appointments-service', '')
-          const url = `${base}/pharmacy-billing-service/auth/login`
+          // Gọi API xác thực thực tế trực tiếp tới Nhóm 6
+          const url = `${authApiUrl.value}/Auth/login`
           const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2314,14 +2343,27 @@ export default {
           })
           if (!res.ok) throw new Error('Đăng nhập thất bại. Tài khoản hoặc mật khẩu không chính xác.')
           const data = await res.json()
-          currentUser.value = {
-            username: data.username || loginForm.value.username,
-            role: data.role,
-            token: data.token
+          
+          currentUser.value.token = data.token
+          localStorage.setItem('clinic_jwt_token', data.token)
+          
+          // Giải mã token thực tế để lấy vai trò và tên người dùng chuẩn xác
+          const syncSuccess = syncUserFromToken(data.token)
+          if (!syncSuccess) {
+            // Fallback nếu giải mã JWT không thành công
+            currentUser.value.role = data.role || 'Patient'
+            currentUser.value.username = data.username || loginForm.value.username
+            localStorage.setItem('clinic_user_role', currentUser.value.role)
+            localStorage.setItem('clinic_user_name', currentUser.value.username)
+            
+            if (activeTab.value === 'tv' || activeTab.value === 'booking') {
+              const r = currentUser.value.role
+              if (r === 'Admin') activeTab.value = 'admin'
+              else if (r === 'Doctor') activeTab.value = 'doctor'
+              else if (r === 'Receptionist' || r === 'Nurse') activeTab.value = 'reception'
+              else activeTab.value = 'booking'
+            }
           }
-          localStorage.setItem('clinic_user_name', currentUser.value.username)
-          localStorage.setItem('clinic_user_role', currentUser.value.role)
-          localStorage.setItem('clinic_jwt_token', currentUser.value.token)
           showAlert('Đăng nhập liên thông qua API Gateway thành công!', 'success')
         }
         loginForm.value = { username: '', password: '' }
@@ -3065,6 +3107,11 @@ export default {
 
     // Auto update TV panel
     onMounted(() => {
+      // Giải mã và phục hồi trạng thái từ token có sẵn trong localStorage
+      if (currentUser.value.token) {
+        syncUserFromToken(currentUser.value.token)
+      }
+
       fetchDoctors()
       fetchTvQueue()
 
@@ -3087,6 +3134,7 @@ export default {
     return {
       menuOpen,
       apiUrl,
+      authApiUrl,
       jwtToken,
       activeRole,
       activeTab,

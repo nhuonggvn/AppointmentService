@@ -200,7 +200,7 @@
     // 4. NHÓM 6: PHARMACY & BILLING SERVICE (Đăng nhập public & API bảo mật)
     // ==========================================
     {
-      "DownstreamPathTemplate": "/api/auth/login",
+      "DownstreamPathTemplate": "/api/Auth/login",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {

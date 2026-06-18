@@ -162,7 +162,7 @@ namespace AppointmentService.API.Controllers
 
         // GET: api/appointments/pending
         [HttpGet("pending")]
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Admin,Receptionist,Nurse")]
         public async Task<ActionResult<IEnumerable<AppointmentDto>>> GetPendingAppointments()
         {
             try

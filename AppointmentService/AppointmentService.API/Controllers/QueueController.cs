@@ -32,7 +32,7 @@ namespace AppointmentService.API.Controllers
 
         // POST: api/queue/confirm-appointment/{appointmentId}
         [HttpPost("confirm-appointment/{appointmentId}")]
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Admin,Receptionist,Nurse")]
         public async Task<ActionResult<AppointmentDto>> ConfirmAppointment(Guid appointmentId)
         {
             try
@@ -174,7 +174,7 @@ namespace AppointmentService.API.Controllers
 
         // PUT: api/queue/{id}/status
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "Admin,Receptionist,Doctor")]
+        [Authorize(Roles = "Admin,Receptionist,Nurse,Doctor")]
         public async Task<IActionResult> UpdateQueueStatus(Guid id, [FromBody] UpdateQueueStatusDto statusDto)
         {
             try

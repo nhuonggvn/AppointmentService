@@ -29,7 +29,7 @@ namespace AppointmentService.API.Controllers
 
         // GET: api/schedules
         [HttpGet]
-        [Authorize(Roles = "Admin,Receptionist")]
+        [Authorize(Roles = "Admin,Receptionist,Nurse")]
         public async Task<ActionResult<IEnumerable<ScheduleDto>>> GetSchedules(
             [FromQuery] Guid? doctorId,
             [FromQuery] DateTime? date)
