@@ -39,6 +39,16 @@
             @keyup.enter="applyConfiguration"
           />
           <v-text-field
+            v-model="medicalApiUrl"
+            label="API Bệnh Án (Nhóm 4)"
+            density="compact"
+            variant="outlined"
+            placeholder="http://26.15.45.202:5000/api"
+            hide-details
+            class="mb-3"
+            @keyup.enter="applyConfiguration"
+          />
+          <v-text-field
             v-model="jwtToken"
             label="JWT Token"
             density="compact"
@@ -140,27 +150,27 @@
           <!-- Tab navigation (Lọc theo vai trò) -->
           <v-tabs v-model="activeTab" bg-color="surface" align-tabs="start" rounded="lg" class="mb-6" border>
             <!-- Bệnh nhân: Thấy đặt lịch khám -->
-            <v-tab v-if="currentUser.role === 'Patient' || currentUser.role === 'Admin'" value="booking" class="font-weight-bold">
+            <v-tab v-if="hasRole('Patient, Admin')" value="booking" class="font-weight-bold">
               <v-icon icon="mdi-calendar-plus" class="mr-2" />
               Bệnh Nhân Đặt Lịch
             </v-tab>
             <!-- Tiếp tân: Thấy tiếp nhận & xếp hàng -->
-            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Nurse' || currentUser.role === 'Admin'" value="reception" class="font-weight-bold">
+            <v-tab v-if="hasRole('Receptionist, Nurse, Admin')" value="reception" class="font-weight-bold">
               <v-icon icon="mdi-clipboard-text-play" class="mr-2" />
               Quầy Tiếp Tân
             </v-tab>
             <!-- Bác sĩ: Thấy phòng khám bác sĩ -->
-            <v-tab v-if="currentUser.role === 'Doctor' || currentUser.role === 'Admin'" value="doctor" class="font-weight-bold">
+            <v-tab v-if="hasRole('Doctor, Admin')" value="doctor" class="font-weight-bold">
               <v-icon icon="mdi-doctor" class="mr-2" />
               Phòng Khám Bác Sĩ
             </v-tab>
             <!-- Dược sĩ & Thu ngân (Tiếp tân/Thu ngân): Thấy Kho thuốc & viện phí -->
-            <v-tab v-if="currentUser.role === 'Receptionist' || currentUser.role === 'Nurse' || currentUser.role === 'Admin'" value="pharmacy" class="font-weight-bold">
+            <v-tab v-if="hasRole('Receptionist, Nurse, Admin')" value="pharmacy" class="font-weight-bold">
               <v-icon icon="mdi-pill" class="mr-2" color="success" />
               Kho Thuốc & Viện Phí
             </v-tab>
             <!-- Admin: Thấy Quản lý Admin -->
-            <v-tab v-if="currentUser.role === 'Admin'" value="admin" class="font-weight-bold">
+            <v-tab v-if="hasRole('Admin')" value="admin" class="font-weight-bold">
               <v-icon icon="mdi-cog" class="mr-2" color="primary" />
               Quản Trị Hệ Thống
             </v-tab>
@@ -1489,6 +1499,7 @@ export default {
     const menuOpen = ref(false)
     const apiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
     const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
+    const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.15.45.202:5000/api')
     
     // Mock Mode & Auth Session
     const isMockMode = ref(false)
@@ -1583,6 +1594,13 @@ export default {
         }
       }
       return false
+    }
+
+    const hasRole = (rolesString) => {
+      if (!currentUser.value || !currentUser.value.role) return false
+      const currentRole = currentUser.value.role.trim().toLowerCase()
+      const allowedRoles = rolesString.split(',').map(r => r.trim().toLowerCase())
+      return allowedRoles.includes(currentRole)
     }
     const loading = ref(false)
     const alert = ref({
@@ -2289,6 +2307,7 @@ export default {
     const applyConfiguration = () => {
       localStorage.setItem('clinic_api_url', apiUrl.value)
       localStorage.setItem('clinic_auth_api_url', authApiUrl.value)
+      localStorage.setItem('clinic_medical_api_url', medicalApiUrl.value)
       localStorage.setItem('clinic_jwt_token', jwtToken.value)
       
       const syncSuccess = syncUserFromToken(jwtToken.value)
@@ -2526,9 +2545,8 @@ export default {
 
           showAlert('Khám bệnh hoàn tất! Đơn thuốc và Hóa đơn viện phí đã chuyển sang bộ phận Thu ngân.', 'success')
         } else {
-          // Gọi API Nhóm 2 (Medical Record) qua Gateway
-          const base = apiUrl.value.replace('/appointments-service', '')
-          const urlRecord = `${base}/medical-records-service/medical-records`
+          // Gọi API Nhóm 4 (Medical Record) trực tiếp
+          const urlRecord = `${medicalApiUrl.value}/MedicalRecords`
           const resRecord = await fetch(urlRecord, {
             method: 'POST',
             headers: {
@@ -2581,12 +2599,15 @@ export default {
           if (bill) bill.status = 'DaThanhToan'
           showAlert('Thu viện phí thành công (Giả lập)!', 'success')
         } else {
-          // Gọi API Nhóm 3 (Pharmacy & Billing) qua Gateway
-          const base = apiUrl.value.replace('/appointments-service', '')
-          const url = `${base}/pharmacy-billing-service/bills/${billId}/pay`
+          // Gọi API Nhóm 6 trực tiếp để cập nhật trạng thái hóa đơn sang đã thanh toán (Paid)
+          const url = `${authApiUrl.value}/Invoice/${billId}/status`
           const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser.value.token}`
+            },
+            body: JSON.stringify({ status: 'Paid' })
           })
           if (!res.ok) throw new Error('Thanh toán hóa đơn viện phí thất bại ở máy chủ Nhóm 6')
           
@@ -2701,7 +2722,7 @@ export default {
             medicalHistory: phone.endsWith('2') ? 'Tiền sử tăng huyết áp' : 'Không có tiền sử bệnh lý đặc biệt'
           }
         } else {
-          const url = `${apiUrl.value.replace('appointments-service', 'medical-records-service')}/patients?phone=${phone}`
+          const url = `${medicalApiUrl.value}/Patients?phone=${phone}`
           const res = await fetch(url, {
             headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
           })
@@ -2758,7 +2779,7 @@ export default {
             appointmentsData = await appRes.json()
           }
 
-          const mrUrl = `${apiUrl.value.replace('appointments-service', 'medical-records-service')}/medical-records?phone=${phone}`
+          const mrUrl = `${medicalApiUrl.value}/MedicalRecords?phone=${phone}`
           let medicalRecordsData = []
           try {
             const mrRes = await fetch(mrUrl, {
@@ -2968,7 +2989,7 @@ export default {
         return
       }
       try {
-        const url = `${apiUrl.value.replace('appointments-service', 'pharmacy-billing-service')}/bills`
+        const url = `${authApiUrl.value}/Invoice`
         const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
         })
@@ -2987,6 +3008,32 @@ export default {
         }
       } catch (err) {
         showAlert(err.message, 'error')
+      }
+    }
+
+    const fetchBills = async () => {
+      if (isMockMode.value) return
+      try {
+        const url = `${authApiUrl.value}/Invoice`
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
+        })
+        if (!res.ok) throw new Error('Không thể tải danh sách hóa đơn từ Nhóm 6')
+        const data = await res.json()
+        
+        // Chuẩn hóa dữ liệu hóa đơn từ Nhóm 6
+        bills.value = data.map(b => ({
+          id: b.id || b.billId,
+          patientName: b.patientName || 'Bệnh nhân',
+          patientPhone: b.patientPhone || 'Không có',
+          consultationFee: b.consultationFee || 0,
+          medicationFee: b.medicationFee || 0,
+          totalAmount: b.totalAmount || b.amount || 0,
+          status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
+          date: b.date || b.createdDate || new Date().toISOString()
+        }))
+      } catch (err) {
+        console.error('Lỗi tải danh sách hóa đơn:', err.message)
       }
     }
 
@@ -3102,6 +3149,8 @@ export default {
         fetchDoctorActiveQueue()
       } else if (newTab === 'tv') {
         fetchTvQueue()
+      } else if (newTab === 'pharmacy' && jwtToken.value) {
+        fetchBills()
       }
     })
 
@@ -3110,6 +3159,7 @@ export default {
       // Giải mã và phục hồi trạng thái từ token có sẵn trong localStorage
       if (currentUser.value.token) {
         syncUserFromToken(currentUser.value.token)
+        fetchBills()
       }
 
       fetchDoctors()
@@ -3124,6 +3174,9 @@ export default {
         if (activeTab.value === 'reception' && jwtToken.value) {
           fetchPendingAppointments()
         }
+        if (activeTab.value === 'pharmacy' && jwtToken.value) {
+          fetchBills()
+        }
       }, 5000)
     })
 
@@ -3135,6 +3188,7 @@ export default {
       menuOpen,
       apiUrl,
       authApiUrl,
+      medicalApiUrl,
       jwtToken,
       activeRole,
       activeTab,
@@ -3198,6 +3252,7 @@ export default {
       clearSearch,
       fetchPendingAppointments,
       fetchDoctorActiveQueue,
+      fetchBills,
       updateQueueStatus,
       fetchTestToken,
       onFilterChange,
@@ -3226,6 +3281,7 @@ export default {
       printQueueTicket,
       
       // Helpers
+      hasRole,
       formatMoney,
       formatDate,
       formatTime,
