@@ -2,6 +2,9 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
+// Global styles (phải import trước Vuetify để có thể override)
+import './style.css'
+
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
@@ -39,6 +42,14 @@ const vuetify = createVuetify({
     themes: {
       customLightTheme
     }
+  },
+  // Đặt font mặc định cho tất cả Vuetify typography
+  defaults: {
+    VBtn: { style: "font-family: 'Inter', sans-serif;" },
+    VTextField: { style: "font-family: 'Inter', sans-serif;" },
+    VSelect: { style: "font-family: 'Inter', sans-serif;" },
+    VListItem: { style: "font-family: 'Inter', sans-serif;" },
+    VCard: { style: "font-family: 'Inter', sans-serif;" },
   }
 })
 

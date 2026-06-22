@@ -1,7 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+/* ================================================================
+   GLOBAL FONT & RESET
+   Font: Inter - Hỗ trợ tiếng Việt tốt, chuyên nghiệp, ít lỗi nhất
+   ================================================================ */
+
+/* Fallback khi Google Fonts chưa load xong */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Inter');
+}
 
 :root {
-  font-family: 'Outfit', sans-serif;
+  /* Khai báo font-stack với nhiều fallback an toàn */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+               'Apple Color Emoji', 'Segoe UI Emoji';
   line-height: 1.5;
   font-weight: 400;
 
@@ -14,6 +29,15 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Áp dụng font cho TOÀN BỘ elements - kể cả Vuetify */
+*,
+*::before,
+*::after {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif !important;
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -21,7 +45,30 @@ body {
   background-color: #F4F5F7;
 }
 
-/* Custom premium scrollbar */
+/* Đảm bảo Vuetify cũng dùng Inter */
+.v-application,
+.v-app-bar,
+.v-navigation-drawer,
+.v-list,
+.v-list-item,
+.v-card,
+.v-btn,
+.v-text-field,
+.v-label,
+.v-chip,
+.v-dialog,
+.v-menu,
+.v-select,
+.v-table,
+.v-data-table,
+.v-alert {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif !important;
+}
+
+/* ================================================================
+   CUSTOM SCROLLBAR
+   ================================================================ */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -32,10 +79,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #DFE1E6;
+  background: #C3C6D6;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C3C6D6;
+  background: #A0A3B1;
 }
