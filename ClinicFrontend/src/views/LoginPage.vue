@@ -1,162 +1,181 @@
 <template>
-  <div class="login-split-wrapper">
+  <div class="login-page-wrapper">
 
-    <!-- BÊN TRÁI: Banner y khoa nghệ thuật -->
-    <div class="split-left d-none d-md-flex">
-      <div class="left-overlay"></div>
-      <div class="left-content-premium">
-        
+    <!-- Background decorative blobs -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <!-- Main Card Container -->
+    <div class="login-container">
+
+      <!-- LEFT PANEL: Branding -->
+      <div class="left-panel d-none d-md-flex">
+
         <!-- Logo -->
-        <div class="brand-header-premium" @click="goHome">
-          <div class="brand-logo-circle">
-            <i class="fa-solid fa-heart-pulse"></i>
-          </div>
-          <span>ClinicFlow</span>
+        <div class="left-logo cursor-pointer" @click="goHome">
+          <v-icon icon="mdi-heart-pulse" size="36" color="white" class="mr-2" />
+          <h1 class="text-h5 font-weight-black text-white mb-0">ClinicFlow</h1>
         </div>
 
-        <!-- Khẩu hiệu lớn -->
-        <div class="branding-message-premium">
-          <h2>Giải pháp quản lý <br /><span class="glow-emerald-text">y tế liên thông số</span></h2>
-          <p>
-            Hệ thống quản lý phòng khám thế hệ mới, tối ưu hóa quy trình tiếp nhận,
-            khám bệnh lâm sàng và thanh toán viện phí tức thì.
+        <!-- Heading -->
+        <div class="left-content">
+          <h2 class="text-h4 font-weight-black text-white mb-4" style="line-height: 1.25;">
+            Giải pháp quản lý y tế thông minh &amp; tin cậy
+          </h2>
+          <p class="text-body-1 text-white mb-0" style="opacity: 0.82; line-height: 1.7;">
+            Tối ưu hóa quy trình khám chữa bệnh, quản lý hồ sơ bệnh nhân và lịch hẹn
+            chuyên nghiệp trong một nền tảng duy nhất.
           </p>
         </div>
 
-        <!-- Danh sách tính năng -->
-        <div class="branding-bullets">
-          <div class="bullet-item">
-            <div class="bullet-icon"><i class="fa-solid fa-shield-halved"></i></div>
-            <div class="bullet-text">
-              <h5>Mã hóa bảo mật cao</h5>
-              <p>Xác thực người dùng bằng cơ chế JWT token bảo mật tuyệt đối.</p>
-            </div>
-          </div>
-          <div class="bullet-item">
-            <div class="bullet-icon"><i class="fa-solid fa-network-wired"></i></div>
-            <div class="bullet-text">
-              <h5>Liên thông API thực tế</h5>
-              <p>Kết nối chặt chẽ giữa 3 nhóm nghiệp vụ Đặt lịch, Bệnh án và Viện phí.</p>
-            </div>
+        <!-- Security badge -->
+        <div class="left-badge">
+          <v-avatar color="white" variant="tonal" size="44" class="mr-3">
+            <v-icon icon="mdi-shield-check" color="white" />
+          </v-avatar>
+          <div>
+            <p class="font-weight-bold text-body-2 text-white mb-0">Hệ thống bảo mật cao</p>
+            <p class="text-caption text-white mb-0" style="opacity: 0.7;">Mã hóa JWT và phân quyền chi tiết</p>
           </div>
         </div>
 
+        <!-- Decorative circles -->
+        <div class="left-circle circle-top"></div>
+        <div class="left-circle circle-bottom"></div>
       </div>
-    </div>
 
-    <!-- BÊN PHẢI: Form Đăng nhập / Đăng ký tối giản -->
-    <div class="split-right">
-      
-      <!-- Nút cấu hình API lơ lửng góc trên phải -->
-      <div class="config-btn-wrapper">
+      <!-- RIGHT PANEL: Auth Form -->
+      <div class="right-panel">
+
+        <!-- Floating Config Button -->
         <v-btn
-          icon="mdi-cog-outline"
+          icon="mdi-cog"
           variant="text"
-          color="grey-darken-2"
+          color="grey-darken-1"
+          class="config-btn"
           @click="configDialog = true"
         />
-      </div>
 
-      <!-- Khung Form Container -->
-      <div class="form-container-premium">
-        
-        <div class="form-header-premium">
-          <div class="d-md-none mb-4" @click="goHome" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-heart-pulse" style="font-size: 24px; color: var(--primary-color);"></i>
-            <span style="font-weight: 700; font-size: 18px;">ClinicFlow</span>
-          </div>
-          <h3>{{ isLoginMode ? 'Chào mừng quay trở lại' : 'Đăng ký tài khoản' }}</h3>
-          <p>{{ isLoginMode ? 'Vui lòng nhập tài khoản để truy cập hệ thống quản trị' : 'Đăng ký nhanh tài khoản bệnh nhân để đặt lịch khám' }}</p>
+        <!-- Form Header -->
+        <div class="form-header">
+          <h3 class="text-h5 font-weight-black text-primary mb-2">
+            {{ isLoginMode ? 'Chào mừng quay trở lại' : 'Tạo tài khoản mới' }}
+          </h3>
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            {{ isLoginMode
+              ? 'Đăng nhập để truy cập trang quản trị y tế liên thông'
+              : 'Đăng ký thông tin bệnh nhân để đặt lịch khám' }}
+          </p>
         </div>
 
-        <v-form @submit.prevent="handleSubmit">
-          
-          <!-- Các trường bổ sung khi Đăng ký -->
+        <!-- Auth Form -->
+        <v-form @submit.prevent="handleSubmit" class="auth-form">
+          <!-- Register extra fields -->
           <template v-if="!isLoginMode">
-            <div class="form-group">
-              <label>Họ và tên đầy đủ</label>
-              <input
-                v-model="authForm.fullName"
-                type="text"
-                placeholder="Nguyễn Văn An"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label>Email liên hệ</label>
-              <input
-                v-model="authForm.email"
-                type="email"
-                placeholder="an.nguyen@example.com"
-                required
-              />
-            </div>
-          </template>
-
-          <!-- Tên đăng nhập -->
-          <div class="form-group">
-            <label>Tên đăng nhập</label>
-            <input
-              v-model="authForm.username"
-              type="text"
-              placeholder="Tên tài khoản hoặc SĐT..."
+            <v-text-field
+              v-model="authForm.fullName"
+              label="Họ và tên đầy đủ"
+              prepend-inner-icon="mdi-badge-account-outline"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              class="mb-3"
               required
             />
-          </div>
+            <v-text-field
+              v-model="authForm.email"
+              label="Email"
+              prepend-inner-icon="mdi-email-outline"
+              type="email"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              class="mb-3"
+              required
+            />
+          </template>
 
-          <!-- Mật khẩu -->
-          <div class="form-group">
-            <label>Mật khẩu</label>
-            <div style="position: relative; display: flex; align-items: center;">
-              <input
-                v-model="authForm.password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Nhập mật khẩu..."
-                required
-                style="padding-right: 44px;"
-              />
-              <v-icon
-                :icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-                size="18"
-                color="grey-darken-1"
-                style="position: absolute; right: 14px; cursor: pointer;"
-                @click="showPassword = !showPassword"
-              />
-            </div>
-          </div>
+          <v-text-field
+            v-model="authForm.username"
+            label="Tên đăng nhập"
+            prepend-inner-icon="mdi-account-outline"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            class="mb-3"
+            required
+          />
 
-          <!-- Alert thông báo lỗi -->
-          <div v-if="errorMsg" class="error-alert-premium">
-            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
-            <span>{{ errorMsg }}</span>
-          </div>
+          <v-text-field
+            v-model="authForm.password"
+            label="Mật khẩu"
+            prepend-inner-icon="mdi-lock-outline"
+            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            :type="showPassword ? 'text' : 'password'"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            class="mb-5"
+            required
+            @click:append-inner="showPassword = !showPassword"
+          />
 
-          <!-- Nút Đăng nhập / Đăng ký -->
-          <button type="submit" class="btn-auth-premium" :disabled="loading">
-            <span v-if="!loading">{{ isLoginMode ? 'Đăng Nhập Hệ Thống' : 'Hoàn Tất Đăng Ký' }}</span>
-            <span v-else><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Đang xử lý...</span>
-          </button>
+          <!-- Error alert -->
+          <v-alert
+            v-if="errorMsg"
+            type="error"
+            variant="tonal"
+            rounded="lg"
+            class="mb-4"
+            closable
+            @click:close="errorMsg = ''"
+          >
+            {{ errorMsg }}
+          </v-alert>
 
+          <v-btn
+            type="submit"
+            color="primary"
+            block
+            size="large"
+            rounded="lg"
+            class="font-weight-bold mb-4"
+            :loading="loading"
+          >
+            {{ isLoginMode ? 'ĐĂNG NHẬP HỆ THỐNG' : 'ĐĂNG KÝ TÀI KHOẢN' }}
+          </v-btn>
         </v-form>
 
-        <!-- Chuyển đổi Đăng nhập / Đăng ký -->
-        <div class="toggle-mode-premium">
-          <span>{{ isLoginMode ? 'Chưa có tài khoản?' : 'Đã có tài khoản?' }}</span>
-          <a @click="toggleMode">{{ isLoginMode ? 'Đăng ký tài khoản' : 'Đăng nhập ngay' }}</a>
-        </div>
-
-        <!-- Trở lại trang chủ -->
-        <div class="back-home-premium">
-          <a @click="goHome">
-            <i class="fa-solid fa-arrow-left mr-2"></i> Quay lại trang chủ
+        <!-- Toggle mode -->
+        <div class="text-center mt-2">
+          <span class="text-body-2 text-grey-darken-1">
+            {{ isLoginMode ? 'Chưa có tài khoản?' : 'Đã có tài khoản?' }}
+          </span>
+          <a
+            class="text-primary font-weight-bold ml-1 text-body-2 cursor-pointer"
+            style="text-decoration: underline;"
+            @click="toggleMode"
+          >
+            {{ isLoginMode ? 'Đăng ký ngay' : 'Đăng nhập ngay' }}
           </a>
         </div>
 
+        <!-- Back to home -->
+        <div class="text-center mt-5">
+          <v-btn
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            prepend-icon="mdi-arrow-left"
+            @click="goHome"
+          >
+            Quay lại trang chủ
+          </v-btn>
+        </div>
       </div>
-
     </div>
 
-    <!-- Cấu hình Dialog API liên thông -->
+    <!-- Connection Config Dialog -->
     <v-dialog v-model="configDialog" max-width="500">
       <v-card class="pa-6 rounded-xl">
         <v-card-title class="text-h6 font-weight-bold text-primary px-0 pb-3 d-flex align-center">
@@ -367,258 +386,142 @@ export default {
 </script>
 
 <style scoped>
-/* SPLIT-SCREEN LAYOUT */
-.login-split-wrapper {
+/* ======= PAGE WRAPPER ======= */
+.login-page-wrapper {
   min-height: 100vh;
+  background-color: #F0F2F5;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
   overflow: hidden;
+}
+
+/* ======= DECORATIVE BACKGROUND BLOBS ======= */
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+}
+.blob-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(0, 61, 155, 0.10);
+  top: -100px;
+  left: -100px;
+}
+.blob-2 {
+  width: 350px;
+  height: 350px;
+  background: rgba(0, 108, 71, 0.08);
+  bottom: -80px;
+  right: -80px;
+}
+
+/* ======= MAIN CARD CONTAINER ======= */
+.login-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 61, 155, 0.16);
   background-color: #ffffff;
 }
 
-/* LEFT PANEL (60%) */
-.split-left {
-  flex: 0 0 60%;
-  position: relative;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 64, 175, 0.8) 100%), 
-              url('https://lh3.googleusercontent.com/aida-public/AB6AXuBVwqkJfQ_E8nZmgTRR2nUfcAFyOGmWAvtLoeYAf9LkzXzPzn33tqK80m9NjAxhpStTu9IYbqwP6AediDbii-nUQHLWX0XpAZZnakbkO29kZrlVoG6atv1rO1p2irB3qBJd-t7mKAPccpyVoJ8BypZLcoqR97YUIw5yzuOohXxDhScdo36cfrIpOM0SX36-ErULmHKgHHvISC0HOM5q4QUtlp7mEXY6sfomhG29IXaRP1vjAd5_96a5HkzlGBgNgVnXPudFHhNZSyd0');
-  background-size: cover;
-  background-position: center;
-  padding: 64px 80px;
+/* ======= LEFT PANEL ======= */
+.left-panel {
+  flex: 0 0 400px;
+  background: linear-gradient(145deg, #003D9B 0%, #002C70 100%);
+  padding: 48px 40px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-.left-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.left-content-premium {
   position: relative;
-  z-index: 10;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  overflow: hidden;
 }
 
-.brand-header-premium {
+.left-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
-.brand-logo-circle {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-}
-
-.branding-message-premium {
-  margin: 60px 0;
-}
-
-.branding-message-premium h2 {
-  font-size: 40px;
-  font-weight: 800;
-  line-height: 1.2;
-  color: #ffffff;
-  margin-bottom: 20px;
-  letter-spacing: -1px;
-}
-
-.glow-emerald-text {
-  background: linear-gradient(135deg, #a7f3d0 0%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.branding-message-premium p {
-  color: #94a3b8;
-  font-size: 16px;
-  line-height: 1.7;
-  max-width: 560px;
-}
-
-.branding-bullets {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.bullet-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.bullet-icon {
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #60a5fa;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.bullet-text h5 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 4px 0;
-}
-
-.bullet-text p {
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* RIGHT PANEL (40%) */
-.split-right {
+.left-content {
   flex: 1;
-  background-color: #f8fafc;
-  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.left-badge {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+}
+
+/* Decorative circles on left panel */
+.left-circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+.circle-top {
+  width: 260px;
+  height: 260px;
+  top: -80px;
+  right: -80px;
+}
+.circle-bottom {
+  width: 180px;
+  height: 180px;
+  bottom: -60px;
+  left: -60px;
+}
+
+/* ======= RIGHT PANEL ======= */
+.right-panel {
+  flex: 1;
+  padding: 48px 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
+  background: #ffffff;
 }
 
-.config-btn-wrapper {
-  position: absolute;
-  top: 24px;
-  right: 24px;
+.config-btn {
+  position: absolute !important;
+  top: 16px;
+  right: 16px;
 }
 
-.form-container-premium {
-  max-width: 420px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.form-header-premium {
+.form-header {
   margin-bottom: 32px;
 }
 
-.form-header-premium h3 {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
-
-.form-header-premium p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* FORM SUBMIT & ERROR STYLE */
-.btn-auth-premium {
+.auth-form {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
-  color: #ffffff;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-top: 8px;
 }
 
-.btn-auth-premium:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
-}
-
-.error-alert-premium {
-  display: flex;
-  align-items: center;
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: var(--danger-color);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-
-.toggle-mode-premium {
-  margin-top: 24px;
-  text-align: center;
-  font-size: 14px;
-}
-
-.toggle-mode-premium span {
-  color: var(--text-secondary);
-}
-
-.toggle-mode-premium a {
-  color: var(--primary-color);
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  margin-left: 6px;
-}
-
-.toggle-mode-premium a:hover {
-  text-decoration: underline;
-}
-
-.back-home-premium {
-  margin-top: 32px;
-  text-align: center;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 24px;
-}
-
-.back-home-premium a {
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.back-home-premium a:hover {
-  color: var(--primary-color);
-}
-
-/* RESPONSIVE */
+/* ======= RESPONSIVE ======= */
 @media (max-width: 960px) {
-  .split-right {
-    padding: 40px 24px;
+  .login-container {
+    max-width: 480px;
+    flex-direction: column;
+  }
+  .right-panel {
+    padding: 40px 32px;
   }
 }
 </style>
