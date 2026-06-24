@@ -1340,57 +1340,15 @@
               <!-- Subtab 1: Quản lý Bác sĩ (CRUD) -->
               <v-window-item value="doctors-management">
                 <v-row>
-                  <!-- Thêm bác sĩ trực ca -->
-                  <v-col cols="12" md="4">
-                    <v-card border flat class="bg-surface pa-6 mb-6">
-                      <div class="text-h6 font-weight-bold mb-4 text-primary">Thêm Bác sĩ mới</div>
-                      <v-form @submit.prevent="addNewDoctor">
-                        <v-text-field
-                          v-model="doctorForm.fullName"
-                          label="Họ và tên Bác sĩ"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                        />
-                        <v-text-field
-                          v-model="doctorForm.specialty"
-                          label="Chuyên khoa"
-                          placeholder="Nội khoa, Da liễu, Nhi khoa, Răng Hàm Mặt"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                        />
-                        <v-text-field
-                          v-model="doctorForm.qualifications"
-                          label="Học vị bằng cấp"
-                          placeholder="Thạc sĩ Bác sĩ, Tiến sĩ Y khoa"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                        />
-                        <v-text-field
-                          v-model.number="doctorForm.consultationFee"
-                          label="Phí khám bệnh (đ)"
-                          type="number"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-4"
-                          required
-                        />
-                        <v-btn type="submit" color="primary" block size="large" class="font-weight-bold" :loading="loading">
-                          Lưu thông tin bác sĩ
-                        </v-btn>
-                      </v-form>
-                    </v-card>
-                  </v-col>
-
                   <!-- Danh sách Bác sĩ hiện tại -->
-                  <v-col cols="12" md="8">
+                  <v-col cols="12">
                     <v-card border flat class="bg-surface pa-6 mb-6">
-                      <div class="text-h6 font-weight-bold mb-4 text-primary">Danh sách bác sĩ phòng khám</div>
+                      <div class="d-flex justify-space-between align-center mb-4">
+                        <div class="text-h6 font-weight-bold text-primary mb-0">Danh sách bác sĩ phòng khám</div>
+                        <v-btn color="success" prepend-icon="mdi-plus" class="font-weight-bold" @click="addDoctorDialog = true">
+                          Thêm bác sĩ
+                        </v-btn>
+                      </div>
                       
                       <v-table density="comfortable" class="bg-surface rounded border">
                         <thead>
@@ -1863,6 +1821,58 @@
             </v-btn>
             <v-btn type="submit" color="primary" class="font-weight-bold flex-grow-1" prepend-icon="mdi-package-variant-plus" :loading="loading">
               Nhập kho thuốc
+            </v-btn>
+          </div>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
+    <!-- Dialog Thêm Bác sĩ mới -->
+    <v-dialog v-model="addDoctorDialog" max-width="500">
+      <v-card class="rounded-xl pa-6 bg-surface">
+        <div class="text-h6 font-weight-bold mb-4 text-primary">Thêm Bác sĩ mới</div>
+        <v-form @submit.prevent="addNewDoctor">
+          <v-text-field
+            v-model="doctorForm.fullName"
+            label="Họ và tên Bác sĩ"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+            required
+          />
+          <v-text-field
+            v-model="doctorForm.specialty"
+            label="Chuyên khoa"
+            placeholder="Nội khoa, Da liễu, Nhi khoa, Răng Hàm Mặt"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+            required
+          />
+          <v-text-field
+            v-model="doctorForm.qualifications"
+            label="Học vị bằng cấp"
+            placeholder="Thạc sĩ Bác sĩ, Tiến sĩ Y khoa"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+            required
+          />
+          <v-text-field
+            v-model.number="doctorForm.consultationFee"
+            label="Phí khám bệnh (đ)"
+            type="number"
+            variant="outlined"
+            density="comfortable"
+            class="mb-4"
+            required
+          />
+          <div class="d-flex gap-2 mt-4">
+            <v-btn variant="outlined" color="grey" class="font-weight-bold flex-grow-1" @click="addDoctorDialog = false">
+              Hủy
+            </v-btn>
+            <v-btn type="submit" color="primary" class="font-weight-bold flex-grow-1" :loading="loading">
+              Lưu thông tin bác sĩ
             </v-btn>
           </div>
         </v-form>
@@ -3302,6 +3312,7 @@ export default {
           doctors.value.push(newDoc)
           specialties.value = [...new Set(doctors.value.map(d => d.specialty))]
           showAlert(`Đã thêm bác sĩ ${doctorForm.value.fullName} (Giả lập)`, 'success')
+          addDoctorDialog.value = false
         } else {
           // Gọi API tạo bác sĩ thật Nhóm 1
           const url = `${apiUrl.value}/doctors`
@@ -3316,6 +3327,7 @@ export default {
           if (!res.ok) throw new Error('Không thể thêm bác sĩ vào máy chủ')
           await fetchDoctors()
           showAlert(`Đã thêm bác sĩ ${doctorForm.value.fullName} thành công!`, 'success')
+          addDoctorDialog.value = false
         }
         doctorForm.value = { fullName: '', specialty: '', qualifications: '', consultationFee: 100000 }
       } catch (err) {
@@ -3341,6 +3353,7 @@ export default {
     })
     const editDoctorDialog = ref(false)
     const addDrugDialog = ref(false)
+    const addDoctorDialog = ref(false)
     const editingDoctor = ref({
       id: '',
       fullName: '',
@@ -3960,6 +3973,7 @@ export default {
       addNewDrug,
       addDrugDialog,
       addNewDoctor,
+      addDoctorDialog,
       editDoctor,
       updateDoctorInfo,
       deleteDoctorInfo,

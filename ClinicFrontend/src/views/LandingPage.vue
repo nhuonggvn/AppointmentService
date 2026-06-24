@@ -493,7 +493,7 @@ export default {
   color: var(--primary-color);
 }
 .bg-emerald-glow {
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(0, 160, 107, 0.08);
   color: var(--accent-color);
 }
 .bg-red-glow {
