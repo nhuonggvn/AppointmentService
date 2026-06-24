@@ -20,17 +20,17 @@ const customLightTheme = {
   colors: {
     background: '#f8fafc',
     surface: '#FFFFFF',
-    primary: '#1274e3',
-    'primary-darken-1': '#1c49c6',
-    secondary: '#64748b',
-    'secondary-darken-1': '#475569',
-    success: '#15803d',
-    'success-darken-1': '#166534',
-    warning: '#fff3cd',
-    'warning-darken-1': '#fef08a',
-    error: '#ff0019',
-    'error-darken-1': '#b91c1c',
-    info: '#1274e3',
+    primary: '#1e40af',
+    'primary-darken-1': '#1e3a8a',
+    secondary: '#0f172a',
+    'secondary-darken-1': '#1e293b',
+    success: '#10b981',
+    'success-darken-1': '#059669',
+    warning: '#f59e0b',
+    'warning-darken-1': '#d97706',
+    error: '#ef4444',
+    'error-darken-1': '#dc2626',
+    info: '#3b82f6',
   }
 }
 

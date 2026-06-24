@@ -3106,8 +3106,14 @@ export default {
           const createdRecord = await resRecord.json()
           medicalRecordId = createdRecord.id || createdRecord.medicalRecordId
 
+          // Lọc danh sách thuốc thực tế (không chứa id giả lập dạng "dr1", "dr2") để tránh lỗi phía API các nhóm
+          const realPrescriptionData = prescriptionData.filter(item => {
+            const idStr = String(item.drugId);
+            return !idStr.startsWith('dr') && !isNaN(parseInt(idStr));
+          });
+
           // 4. Nếu có kê đơn thuốc, gọi API Nhóm 4 để lưu đơn thuốc liên kết
-          if (prescriptionData.length > 0 && medicalRecordId) {
+          if (realPrescriptionData.length > 0 && medicalRecordId) {
             const urlPrescription = `${medicalApiUrl.value}/Prescriptions`
             try {
               const resPresc = await fetch(urlPrescription, {
@@ -3119,7 +3125,7 @@ export default {
                 body: JSON.stringify({
                   medicalRecordId: medicalRecordId,
                   notes: 'Đơn thuốc điều trị phòng khám',
-                  details: prescriptionData.map(item => ({
+                  details: realPrescriptionData.map(item => ({
                     medicineId: String(item.drugId),
                     quantity: parseInt(item.quantity),
                     dosageInstruction: item.dosage
@@ -3147,7 +3153,7 @@ export default {
               body: JSON.stringify({
                 patientName: activeConsultation.value.patientName,
                 consultationFee: consultFee,
-                items: prescriptionData.map(item => ({
+                items: realPrescriptionData.map(item => ({
                   medicineId: parseInt(item.drugId),
                   quantity: parseInt(item.quantity)
                 }))
