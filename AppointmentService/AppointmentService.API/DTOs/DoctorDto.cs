@@ -8,6 +8,7 @@ namespace AppointmentService.API.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Specialty { get; set; } = string.Empty;
         public string Qualifications { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
         public decimal ConsultationFee { get; set; }
         public bool IsActive { get; set; }
     }
@@ -17,6 +18,7 @@ namespace AppointmentService.API.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Specialty { get; set; } = string.Empty;
         public string Qualifications { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
         public decimal ConsultationFee { get; set; }
     }
 }

@@ -884,8 +884,6 @@
             </v-row>
           </v-window-item>
 
-
-
           <!-- 3. DOCTOR PORTAL TAB (Khám bệnh & Kê đơn thuốc) -->
           <v-window-item value="doctor">
             <v-row>
@@ -893,15 +891,47 @@
               <v-col cols="12" md="4">
                 <v-card border flat class="bg-surface pa-6 mb-6">
                   <div class="text-subtitle-1 font-weight-bold mb-4">Bác sĩ trực ca</div>
-                  <v-select
+                  <v-text-field
+                    v-model="doctorPortalSearch"
+                    label="Tìm kiếm bác sĩ"
+                    prepend-inner-icon="mdi-magnify"
+                    variant="outlined"
+                    density="comfortable"
+                    class="mb-3"
+                    hide-details
+                  />
+                  <v-row class="mb-3">
+                    <v-col cols="12" sm="6" class="pr-sm-1">
+                      <v-select
+                        v-model="doctorPortalSpecialty"
+                        :items="['Tất cả', ...availableSpecialties]"
+                        label="Chọn Khoa"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="6" class="pl-sm-1">
+                      <v-select
+                        v-model="doctorPortalGender"
+                        :items="['Tất cả', 'Nam', 'Nữ']"
+                        label="Giới tính"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                      />
+                    </v-col>
+                  </v-row>
+                  <v-autocomplete
                     v-model="doctorPortal.doctorId"
-                    :items="doctors"
+                    :items="filteredDoctorPortalList"
                     item-title="fullName"
                     item-value="id"
                     label="Chọn Bác sĩ"
                     variant="outlined"
                     density="comfortable"
                     @update:model-value="fetchDoctorActiveQueue"
+                    no-data-text="Không tìm thấy bác sĩ phù hợp"
                   />
 
                   <v-divider class="my-4" />
@@ -1701,6 +1731,14 @@
                   density="comfortable"
                   class="mb-3"
                 />
+                <v-select
+                  v-model="editingDoctor.gender"
+                  :items="['Nam', 'Nữ']"
+                  label="Giới tính"
+                  variant="outlined"
+                  density="comfortable"
+                  class="mb-3"
+                />
                 <v-text-field
                   v-model.number="editingDoctor.consultationFee"
                   label="Phí khám bệnh"
@@ -1957,6 +1995,15 @@
             class="mb-3"
             required
           />
+          <v-select
+            v-model="doctorForm.gender"
+            :items="['Nam', 'Nữ']"
+            label="Giới tính"
+            variant="outlined"
+            density="comfortable"
+            class="mb-3"
+            required
+          />
           <v-text-field
             v-model.number="doctorForm.consultationFee"
             label="Phí khám bệnh (đ)"
@@ -2149,6 +2196,7 @@ export default {
         fullName: 'Nguyễn Văn An',
         specialty: 'Nội khoa',
         qualifications: 'Thạc sĩ Bác sĩ',
+        gender: 'Nam',
         consultationFee: 150000,
         isActive: true
       },
@@ -2157,6 +2205,7 @@ export default {
         fullName: 'Trần Thị Bình',
         specialty: 'Nhi khoa',
         qualifications: 'Bác sĩ Chuyên khoa 1',
+        gender: 'Nữ',
         consultationFee: 200000,
         isActive: true
       },
@@ -2165,6 +2214,7 @@ export default {
         fullName: 'Lê Hoàng Nam',
         specialty: 'Da liễu',
         qualifications: 'Bác sĩ Chuyên khoa 2',
+        gender: 'Nam',
         consultationFee: 250000,
         isActive: true
       },
@@ -2173,6 +2223,7 @@ export default {
         fullName: 'Phạm Minh Đức',
         specialty: 'Răng Hàm Mặt',
         qualifications: 'Tiến sĩ Y khoa',
+        gender: 'Nam',
         consultationFee: 300000,
         isActive: true
       }
@@ -2244,6 +2295,7 @@ export default {
       fullName: '',
       specialty: '',
       qualifications: '',
+      gender: 'Nam',
       consultationFee: 100000
     })
 
@@ -2276,6 +2328,32 @@ export default {
     const doctorPortal = ref({
       doctorId: null
     })
+    const doctorPortalSearch = ref('')
+    const doctorPortalSpecialty = ref('Tất cả')
+    const doctorPortalGender = ref('Tất cả')
+    
+    const filteredDoctorPortalList = computed(() => {
+      let result = doctors.value.filter(d => d.isActive)
+      
+      if (doctorPortalSpecialty.value !== 'Tất cả') {
+        result = result.filter(d => d.specialty === doctorPortalSpecialty.value)
+      }
+      
+      if (doctorPortalGender.value !== 'Tất cả') {
+        result = result.filter(d => d.gender === doctorPortalGender.value)
+      }
+      
+      if (doctorPortalSearch.value) {
+        const removeTones = (str) => {
+          if (!str) return ""
+          return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D")
+        }
+        const query = removeTones(doctorPortalSearch.value.toLowerCase().trim())
+        result = result.filter(d => removeTones(d.fullName.toLowerCase()).includes(query))
+      }
+      return result
+    })
+
     const doctorQueue = ref([])
 
     // TV Queue portal
@@ -2360,8 +2438,12 @@ export default {
         result = result.filter(d => d.specialty === selectedSpecialty.value)
       }
       if (bookingDoctorSearchQuery.value) {
-        const query = bookingDoctorSearchQuery.value.toLowerCase().trim()
-        result = result.filter(d => d.fullName.toLowerCase().includes(query))
+        const removeTones = (str) => {
+          if (!str) return ""
+          return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D")
+        }
+        const query = removeTones(bookingDoctorSearchQuery.value.toLowerCase().trim())
+        result = result.filter(d => removeTones(d.fullName.toLowerCase()).includes(query))
       }
       return result
     })
@@ -3487,6 +3569,7 @@ export default {
           fullName: doctorForm.value.fullName,
           specialty: doctorForm.value.specialty,
           qualifications: doctorForm.value.qualifications,
+          gender: doctorForm.value.gender,
           consultationFee: doctorForm.value.consultationFee,
           isActive: true
         }
@@ -3512,7 +3595,7 @@ export default {
           showAlert(`Đã thêm bác sĩ ${doctorForm.value.fullName} thành công!`, 'success')
           addDoctorDialog.value = false
         }
-        doctorForm.value = { fullName: '', specialty: '', qualifications: '', consultationFee: 100000 }
+        doctorForm.value = { fullName: '', specialty: '', qualifications: '', gender: 'Nam', consultationFee: 100000 }
       } catch (err) {
         showAlert(err.message, 'error')
       } finally {
@@ -3542,6 +3625,7 @@ export default {
       fullName: '',
       specialty: '',
       qualifications: '',
+      gender: 'Nam',
       consultationFee: 100000,
       isActive: true
     })
@@ -4350,6 +4434,10 @@ export default {
       
       // Doctor board
       doctorPortal,
+      doctorPortalSearch,
+      doctorPortalSpecialty,
+      doctorPortalGender,
+      filteredDoctorPortalList,
       doctorQueue,
       sortedDoctorQueue,
       
