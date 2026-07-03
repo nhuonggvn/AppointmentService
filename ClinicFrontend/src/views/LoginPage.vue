@@ -209,7 +209,7 @@
             label="Địa chỉ API Bệnh Án (Nhóm 4)"
             variant="outlined"
             density="comfortable"
-            hint="Mặc định: http://26.15.45.202:5000/api"
+            hint="Mặc định: http://26.79.10.201:5000/api"
             persistent-hint
           />
         </v-card-text>
@@ -242,7 +242,7 @@ export default {
 
     const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
     const gatewayApiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
-    const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.15.45.202:5000/api')
+    const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.79.10.201:5000/api')
 
     const authForm = ref({
       username: '',

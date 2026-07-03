@@ -176,37 +176,7 @@
           />
         </div>
 
-        <!-- User profile -->
-        <div v-if="currentUser.token && !sidebarRail" class="pa-3" style="border-top: 1px solid rgba(0,0,0,0.06);">
-          <div class="d-flex align-center gap-3 mb-2">
-            <v-avatar color="primary" size="36" class="text-caption font-weight-bold text-white flex-shrink-0">
-              {{ (currentUser.username || 'TV').substring(0, 2).toUpperCase() }}
-            </v-avatar>
-            <div class="flex-grow-1" style="min-width: 0;">
-              <div class="text-caption font-weight-bold text-truncate">{{ currentUser.username }}</div>
-              <v-chip size="x-small" color="primary" variant="flat" class="mt-1">{{ currentUser.role }}</v-chip>
-            </div>
-          </div>
-          <v-btn
-            block
-            variant="tonal"
-            color="error"
-            size="small"
-            prepend-icon="mdi-logout"
-            class="font-weight-medium"
-            @click="handleLogout"
-          >
-            Đăng xuất
-          </v-btn>
-        </div>
-
-        <!-- Rail mode: compact user avatar + logout -->
-        <div v-else-if="currentUser.token && sidebarRail" class="pa-2 d-flex flex-column align-center gap-2" style="border-top: 1px solid rgba(0,0,0,0.06);">
-          <v-avatar color="primary" size="32" class="text-caption font-weight-bold text-white">
-            {{ (currentUser.username || 'TV').substring(0, 2).toUpperCase() }}
-          </v-avatar>
-          <v-btn icon="mdi-logout" variant="text" color="error" size="x-small" @click="handleLogout" />
-        </div>
+        <!-- User profile removed because it is already shown in the Header Bar -->
       </template>
     </v-navigation-drawer>
 
@@ -282,7 +252,7 @@
             label="API Bệnh Án (Nhóm 4)"
             density="compact"
             variant="outlined"
-            placeholder="http://26.15.45.202:5000/api"
+            placeholder="http://26.79.10.201:5000/api"
             hide-details
             class="mb-3"
             @keyup.enter="applyConfiguration"
@@ -413,43 +383,84 @@
                     <h2 class="text-h6 font-weight-bold">Bước 1: Chọn bác sĩ & ca khám</h2>
                   </div>
 
-                  <!-- Specialty filter -->
-                  <v-select
-                    v-model="selectedSpecialty"
-                    :items="specialties"
-                    label="Lọc theo Chuyên Khoa"
-                    variant="outlined"
-                    density="comfortable"
-                    clearable
-                    class="mb-4"
-                    @update:model-value="onFilterChange"
-                  />
+                  <!-- Specialty filter and Name search -->
+                  <v-row class="mb-2">
+                    <v-col cols="12" sm="6">
+                      <v-select
+                        v-model="selectedSpecialty"
+                        :items="specialties"
+                        label="Lọc theo Chuyên Khoa"
+                        variant="outlined"
+                        density="comfortable"
+                        clearable
+                        hide-details
+                        @update:model-value="onFilterChange"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="bookingDoctorSearchQuery"
+                        label="Tìm kiếm Bác sĩ theo tên"
+                        placeholder="Nhập tên bác sĩ..."
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        density="comfortable"
+                        clearable
+                        hide-details
+                      />
+                    </v-col>
+                  </v-row>
 
                   <!-- Doctors List -->
-                  <div class="text-subtitle-2 font-weight-bold mb-2">Danh sách Bác sĩ</div>
-                  <v-slide-group show-arrows class="mb-4">
-                    <v-slide-group-item v-for="doc in filteredDoctors" :key="doc.id">
+                  <div class="text-subtitle-2 font-weight-bold mb-2 mt-4">Danh sách Bác sĩ</div>
+                  
+                  <v-row v-if="bookingPaginatedDoctors.length > 0" class="mb-4">
+                    <v-col
+                      v-for="doc in bookingPaginatedDoctors"
+                      :key="doc.id"
+                      cols="12"
+                      sm="6"
+                      md="4"
+                    >
                       <v-card
-                        width="240"
                         border
                         flat
                         :color="bookingForm.doctorId === doc.id ? 'primary-darken-1' : 'surface'"
-                        class="pa-4 ma-2 cursor-pointer hover-card"
+                        class="pa-4 cursor-pointer hover-card h-100 d-flex flex-column justify-space-between"
                         :style="bookingForm.doctorId === doc.id ? 'border: 2px solid #003D9B !important' : ''"
                         @click="selectDoctor(doc)"
                       >
-                        <div class="d-flex justify-space-between align-center mb-1">
-                          <span class="font-weight-bold text-subtitle-1 text-truncate" style="max-width: 140px;">{{ doc.fullName }}</span>
-                          <v-chip size="x-small" :color="getSpecialtyColor(doc.specialty)" variant="flat">{{ doc.specialty }}</v-chip>
+                        <div>
+                          <div class="font-weight-bold text-subtitle-1 mb-1">{{ doc.fullName }}</div>
+                          <div class="d-flex align-center gap-2 mb-2">
+                            <v-chip size="x-small" :color="getSpecialtyColor(doc.specialty)" variant="flat">{{ doc.specialty }}</v-chip>
+                          </div>
+                          <div class="text-caption mb-2" :class="bookingForm.doctorId === doc.id ? 'text-grey-lighten-2' : 'text-grey-darken-1'">
+                            {{ doc.qualifications }}
+                          </div>
                         </div>
-                        <div class="text-caption mb-2 text-truncate" :class="bookingForm.doctorId === doc.id ? 'text-grey-lighten-2' : 'text-grey-darken-1'">{{ doc.qualifications }}</div>
-                        <div class="d-flex justify-space-between align-center">
+                        <div class="d-flex justify-space-between align-center pt-2" style="border-top: 1px dashed rgba(0,0,0,0.06);">
                           <span class="text-caption text-grey">Phí khám:</span>
                           <span class="font-weight-bold text-success">{{ formatMoney(doc.consultationFee) }}đ</span>
                         </div>
                       </v-card>
-                    </v-slide-group-item>
-                  </v-slide-group>
+                    </v-col>
+                  </v-row>
+
+                  <v-alert v-else type="warning" variant="text" density="comfortable" class="mb-4">
+                    Không tìm thấy bác sĩ nào phù hợp với bộ lọc hoặc tìm kiếm hiện tại.
+                  </v-alert>
+
+                  <!-- Pagination -->
+                  <div v-if="bookingDoctorPageCount > 1" class="d-flex justify-center my-4">
+                    <v-pagination
+                      v-model="bookingDoctorPage"
+                      :length="bookingDoctorPageCount"
+                      :total-visible="5"
+                      size="small"
+                      active-color="primary"
+                    />
+                  </div>
 
                   <v-divider class="my-6" />
 
@@ -1229,12 +1240,24 @@
                   </div>
 
                   <div class="pa-4">
-                    <v-alert v-if="bills.length === 0" type="info" variant="tonal" rounded="lg">
-                      Không có hóa đơn nào cần xử lý hôm nay.
+                    <!-- Search bar for cashier -->
+                    <v-text-field
+                      v-model="billingSearchQuery"
+                      placeholder="Tìm kiếm hóa đơn theo tên hoặc số điện thoại..."
+                      prepend-inner-icon="mdi-magnify"
+                      variant="outlined"
+                      density="comfortable"
+                      clearable
+                      class="mb-4"
+                      hide-details
+                    />
+
+                    <v-alert v-if="filteredBills.length === 0" type="info" variant="tonal" rounded="lg">
+                      Không tìm thấy hóa đơn nào phù hợp.
                     </v-alert>
 
                     <v-card
-                      v-for="b in bills"
+                      v-for="b in filteredBills"
                       :key="b.id"
                       border
                       flat
@@ -1997,7 +2020,7 @@ export default {
     const menuOpen = ref(false)
     const apiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
     const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
-    const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.15.45.202:5000/api')
+    const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.79.10.201:5000/api')
     
     // Mock Mode & Auth Session
     const isMockMode = ref(false)
@@ -2183,6 +2206,15 @@ export default {
         date: new Date().toISOString().split('T')[0]
       }
     ])
+    const billingSearchQuery = ref('')
+    const filteredBills = computed(() => {
+      if (!billingSearchQuery.value) return bills.value
+      const query = billingSearchQuery.value.toLowerCase().trim()
+      return bills.value.filter(b => 
+        (b.patientName && b.patientName.toLowerCase().includes(query)) || 
+        (b.patientPhone && b.patientPhone.includes(query))
+      )
+    })
 
     const medicalRecords = ref([
       {
@@ -2317,10 +2349,43 @@ export default {
       return doctors.value.filter(d => d.specialty === selectedSpecialty.value)
     })
 
+    // Bổ sung các biến phân trang và tìm kiếm cho Bước 1 đặt lịch khám
+    const bookingDoctorSearchQuery = ref("")
+    const bookingDoctorPage = ref(1)
+    const bookingDoctorsPerPage = ref(9)
+
+    const bookingFilteredDoctors = computed(() => {
+      let result = doctors.value.filter(d => d.isActive)
+      if (selectedSpecialty.value) {
+        result = result.filter(d => d.specialty === selectedSpecialty.value)
+      }
+      if (bookingDoctorSearchQuery.value) {
+        const query = bookingDoctorSearchQuery.value.toLowerCase().trim()
+        result = result.filter(d => d.fullName.toLowerCase().includes(query))
+      }
+      return result
+    })
+
+    const bookingPaginatedDoctors = computed(() => {
+      const start = (bookingDoctorPage.value - 1) * bookingDoctorsPerPage.value
+      const end = start + bookingDoctorsPerPage.value
+      return bookingFilteredDoctors.value.slice(start, end)
+    })
+
+    const bookingDoctorPageCount = computed(() => {
+      return Math.ceil(bookingFilteredDoctors.value.length / bookingDoctorsPerPage.value) || 1
+    })
+
+    // Watcher reset trang khi bộ lọc/ô tìm kiếm thay đổi
+    watch([selectedSpecialty, bookingDoctorSearchQuery], () => {
+      bookingDoctorPage.value = 1
+    })
+
     const onFilterChange = () => {
       bookingForm.value.doctorId = ''
       bookingForm.value.scheduleId = ''
       availableSchedules.value = []
+      bookingDoctorPage.value = 1
     }
 
     // Selecting Doctor & Schedule
@@ -2381,7 +2446,7 @@ export default {
         const res = await fetch(url)
         if (!res.ok) throw new Error('Không thể tải lịch của bác sĩ')
         const data = await res.json()
-        availableSchedules.value = data
+          availableSchedules.value = data.map(sch => ({ ...sch, shiftType: sch.shiftType || sch.shift }))
       } catch (err) {
         showAlert(err.message, 'error')
       }
@@ -3283,7 +3348,7 @@ export default {
                 'Authorization': `Bearer ${currentUser.value.token}`
               },
               body: JSON.stringify({
-                patientName: activeConsultation.value.patientName,
+                patientName: `${activeConsultation.value.patientName} (${activeConsultation.value.patientPhone})`,
                 consultationFee: consultFee,
                 items: realPrescriptionData.map(item => ({
                   medicineId: parseInt(item.drugId),
@@ -3804,16 +3869,25 @@ export default {
         const data = await res.json()
         
         // Chuẩn hóa dữ liệu hóa đơn từ Nhóm 6
-        bills.value = data.map(b => ({
-          id: b.id || b.billId,
-          patientName: b.patientName || 'Bệnh nhân',
-          patientPhone: b.patientPhone || 'Không có',
-          consultationFee: b.consultationFee || 0,
-          medicationFee: b.medicationFee || 0,
-          totalAmount: b.totalAmount || b.amount || 0,
-          status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
-          date: b.date || b.createdDate || new Date().toISOString()
-        }))
+        bills.value = data.map(b => {
+          let name = b.patientName || 'Bệnh nhân'
+          let phone = b.patientPhone || 'Không có'
+          const match = name.match(/^(.*?)\s*\((.*?)\)$/)
+          if (match) {
+            name = match[1].trim()
+            phone = match[2].trim()
+          }
+          return {
+            id: b.id || b.billId,
+            patientName: name,
+            patientPhone: phone,
+            consultationFee: b.consultationFee || 0,
+            medicationFee: b.medicineFee || b.medicationFee || 0,
+            totalAmount: b.totalAmount || b.amount || 0,
+            status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
+            date: b.date || b.createdDate || new Date().toISOString()
+          }
+        })
       } catch (err) {
         console.error('Lỗi tải danh sách hóa đơn:', err.message)
       }
@@ -3999,14 +4073,19 @@ export default {
 
     const getSpecialtyColor = (specialty) => {
       if (!specialty) return 'grey'
-      const spec = specialty.toLowerCase().trim()
-      if (spec.includes('nội khoa')) return 'blue'
+      // Loại bỏ dấu tiếng Việt để so sánh chính xác dù data có dấu hay không
+      const spec = specialty.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").trim()
+      
+      if (spec.includes('noi khoa')) return 'blue'
       if (spec.includes('nhi khoa')) return 'teal'
-      if (spec.includes('da liễu')) return 'orange'
-      if (spec.includes('răng hàm mặt')) return 'purple'
-      if (spec.includes('tai mũi họng')) return 'red'
-      if (spec.includes('ngoại khoa')) return 'indigo'
-      if (spec.includes('phụ sản')) return 'pink'
+      if (spec.includes('da lieu')) return 'orange'
+      if (spec.includes('rang ham mat')) return 'purple'
+      if (spec.includes('tai mui hong')) return 'red'
+      if (spec.includes('ngoai khoa')) return 'indigo'
+      if (spec.includes('phu san')) return 'pink'
+      if (spec.includes('mat')) return 'deep-purple'
+      if (spec.includes('than kinh')) return 'brown'
+      if (spec.includes('tim mach')) return 'red-darken-2'
       return 'primary'
     }
 
@@ -4048,9 +4127,17 @@ export default {
         try {
           const text = evt.target.result
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
-          const startIdx = lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('bác sĩ') ? 1 : 0
+          const startIdx = lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('bac si') ? 1 : 0
           
           let importCount = 0
+          let apiFailCount = 0
+          const totalLines = lines.length - startIdx
+
+          // Tu dong lay Token Admin neu chua co (de tranh loi 401)
+          if (!isMockMode.value) {
+            await fetchTestToken('Admin')
+          }
+
           for (let i = startIdx; i < lines.length; i++) {
             const parts = lines[i].split(',')
             if (parts.length >= 4) {
@@ -4070,25 +4157,47 @@ export default {
                 })
                 importCount++
               } else {
-                const url = `${apiUrl.value}/doctors`
-                const headers = { 'Content-Type': 'application/json' }
-                if (jwtToken.value) {
-                  headers['Authorization'] = `Bearer ${jwtToken.value}`
+                try {
+                  const url = `${apiUrl.value}/doctors`
+                  const headers = { 'Content-Type': 'application/json' }
+                  if (jwtToken.value) {
+                    headers['Authorization'] = `Bearer ${jwtToken.value}`
+                  }
+                  const res = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ fullName, specialty, qualifications, consultationFee })
+                  })
+                  if (res.ok) {
+                    importCount++
+                  } else {
+                    apiFailCount++
+                  }
+                } catch (fetchErr) {
+                  // Loi mang hoac Backend khong chay
+                  apiFailCount++
+                  console.error('Loi ket noi Backend:', fetchErr)
                 }
-                const res = await fetch(url, {
-                  method: 'POST',
-                  headers,
-                  body: JSON.stringify({ fullName, specialty, qualifications, consultationFee })
-                })
-                if (res.ok) importCount++
               }
             }
           }
+
+          // Cap nhat danh sach chuyen khoa tu danh sach hien tai (khong bao gom bac si loi)
+          specialties.value = [...new Set(doctors.value.map(d => d.specialty))]
           
-          showAlert(`Đã import thành công ${importCount} bác sĩ!`, 'success')
-          await fetchDoctors()
+          if (importCount > 0) {
+            showAlert(`Đã import thành công ${importCount} bác sĩ vào Database!`, 'success')
+          }
+          if (apiFailCount > 0) {
+            showAlert(`Lỗi kết nối: Không thể lưu ${apiFailCount} bác sĩ. Hãy đảm bảo Backend đang chạy tại ${apiUrl.value}`, 'error')
+          }
+
+          if (!isMockMode.value && importCount > 0) {
+            await fetchDoctors()
+          }
+
         } catch (err) {
-          showAlert('Lỗi khi import file bác sĩ: ' + err.message, 'error')
+          showAlert('Loi khi import file bac si: ' + err.message, 'error')
         }
       }
       reader.readAsText(file)
@@ -4113,6 +4222,13 @@ export default {
           const startIdx = lines[0].toLowerCase().includes('doctor') || lines[0].toLowerCase().includes('ngày') ? 1 : 0
           
           let importCount = 0
+          let apiFailCount = 0
+          
+          // Tu dong lay Token Admin neu chua co (de tranh loi 401)
+          if (!isMockMode.value) {
+            await fetchTestToken('Admin')
+          }
+
           for (let i = startIdx; i < lines.length; i++) {
             const parts = lines[i].split(',')
             if (parts.length >= 4) {
@@ -4126,11 +4242,17 @@ export default {
               const matchedDoc = doctors.value.find(d => d.fullName.toLowerCase() === doctorId.toLowerCase() || d.id === doctorId)
               if (matchedDoc) {
                 resolvedDoctorId = matchedDoc.id
+              } else {
+                if (resolvedDoctorId.length !== 36) { // Nếu không phải là GUID hợp lệ, bỏ qua
+                  apiFailCount++
+                  continue
+                }
               }
               
+              const startTime = shiftStr === 'Sang' ? '08:00:00' : (shiftStr === 'Chieu' ? '13:30:00' : '18:00:00')
+              const endTime = shiftStr === 'Sang' ? '12:00:00' : (shiftStr === 'Chieu' ? '17:30:00' : '21:00:00')
+
               if (isMockMode.value) {
-                const startTime = shiftStr === 'Sang' ? '08:00:00' : (shiftStr === 'Chieu' ? '13:30:00' : '18:00:00')
-                const endTime = shiftStr === 'Sang' ? '12:00:00' : (shiftStr === 'Chieu' ? '17:30:00' : '21:00:00')
                 adminSchedules.value.unshift({
                   id: 'sch_imported_' + Date.now() + '_' + i,
                   doctorId: resolvedDoctorId,
@@ -4156,15 +4278,23 @@ export default {
                     doctorId: resolvedDoctorId,
                     date: dateStr,
                     shift: shiftVal,
+                    startTime,
+                    endTime,
                     maxPatients
                   })
                 })
                 if (res.ok) importCount++
+                else apiFailCount++
               }
             }
           }
           
-          showAlert(`Đã import thành công ${importCount} lịch trực!`, 'success')
+          if (importCount > 0) {
+            showAlert(`Đã import thành công ${importCount} lịch trực!`, 'success')
+          }
+          if (apiFailCount > 0) {
+            showAlert(`Có ${apiFailCount} lịch bị lỗi (Bác sĩ không tồn tại hoặc sai dữ liệu).`, 'warning')
+          }
           await fetchAdminSchedules()
         } catch (err) {
           showAlert('Lỗi khi import file lịch trực: ' + err.message, 'error')
@@ -4195,6 +4325,8 @@ export default {
       loginForm,
       drugs,
       bills,
+      filteredBills,
+      billingSearchQuery,
       medicalRecords,
       drugForm,
       doctorForm,
@@ -4242,6 +4374,14 @@ export default {
       doctorPage,
       paginatedDoctors,
       doctorPageCount,
+
+      // Pagination refs and lists for booking tab
+      bookingDoctorSearchQuery,
+      bookingDoctorPage,
+      bookingDoctorsPerPage,
+      bookingFilteredDoctors,
+      bookingPaginatedDoctors,
+      bookingDoctorPageCount,
       schedulePage,
       paginatedSchedules,
       schedulePageCount,
@@ -4461,3 +4601,4 @@ export default {
   background-color: var(--secondary-color) !important;
 }
 </style>
+

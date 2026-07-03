@@ -236,7 +236,7 @@
             <v-icon icon="mdi-circle" size="8" color="#1274e3"/> Nhóm 5 — Appointment (26.88.31.108)
           </div>
           <div class="lp-footer-service">
-            <v-icon icon="mdi-circle" size="8" color="#00a06b"/> Nhóm 4 — Medical (26.15.45.202)
+            <v-icon icon="mdi-circle" size="8" color="#00a06b"/> Nhóm 4 — Medical (26.79.10.201)
           </div>
           <div class="lp-footer-service">
             <v-icon icon="mdi-circle" size="8" color="#f59e0b"/> Nhóm 6 — Pharmacy (26.71.15.204)

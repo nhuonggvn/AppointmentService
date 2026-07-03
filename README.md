@@ -215,5 +215,5 @@ dotnet test
 Khi thực hiện báo cáo liên thông trực tiếp giữa 3 nhóm trên lớp học, các máy tính cần kết nối chung một mạng LAN ảo bằng Radmin VPN và cấu hình đúng địa chỉ IP đích:
 
 - **Appointment Service (Nhóm 5 - Máy của bạn)**: Địa chỉ IP Radmin VPN là `26.88.31.108` (Cổng dịch vụ: `5000`).
-- **Medical Record Service (Nhóm 4)**: Địa chỉ IP Radmin VPN là `26.15.45.202` (Gateway định tuyến yêu cầu bệnh án về địa chỉ này).
+- **Medical Record Service (Nhóm 4)**: Địa chỉ IP Radmin VPN là `26.79.10.201` (Gateway định tuyến yêu cầu bệnh án về địa chỉ này).
 - **Pharmacy & Billing Service (Nhóm 6)**: Địa chỉ IP Radmin VPN là `26.71.15.204` (Mọi token JWT và hóa đơn được kiểm tra qua dịch vụ chạy tại địa chỉ này).
