@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AppointmentService.Domain.Entities;
 using AppointmentService.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentService.Infrastructure.Data
 {
@@ -10,8 +11,8 @@ namespace AppointmentService.Infrastructure.Data
     {
         public static void Initialize(AppointmentDbContext context)
         {
-            // Create database if it doesn't exist
-            context.Database.EnsureCreated();
+            // Apply pending migrations (which will also create the database if it doesn't exist)
+            context.Database.Migrate();
 
             // Check if database has been seeded
             if (context.Doctors.Any())
