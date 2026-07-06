@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using PharmacyBillingService.Data;
@@ -33,6 +33,7 @@ namespace PharmacyBillingService.Controllers
             public string Username { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
             public string Role { get; set; } = "Patient";
+            public string PhoneNumber { get; set; } = string.Empty;
         }
 
         [HttpPost("login")]
@@ -109,7 +110,8 @@ namespace PharmacyBillingService.Controllers
             {
                 Username = request.Username,
                 Password = request.Password,
-                Role = role
+                Role = role,
+                PhoneNumber = request.PhoneNumber
             };
 
             _context.Users.Add(user);

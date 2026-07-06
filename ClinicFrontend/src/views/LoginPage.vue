@@ -83,6 +83,16 @@
               required
             />
             <v-text-field
+              v-model="authForm.phoneNumber"
+              label="Số điện thoại"
+              prepend-inner-icon="mdi-phone-outline"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              class="mb-3"
+              required
+            />
+            <v-text-field
               v-model="authForm.email"
               label="Email"
               prepend-inner-icon="mdi-email-outline"
@@ -248,7 +258,8 @@ export default {
       username: '',
       password: '',
       fullName: '',
-      email: ''
+      email: '',
+      phoneNumber: ''
     })
 
     onMounted(() => {
@@ -354,10 +365,28 @@ export default {
       try {
         errorMsg.value = ''
         loading.value = true
-        await new Promise(resolve => setTimeout(resolve, 800))
-        errorMsg.value = ''
+
+        const url = `${authApiUrl.value}/Auth/register`
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: authForm.value.username,
+            password: authForm.value.password,
+            role: 'Patient',
+            phoneNumber: authForm.value.phoneNumber
+          })
+        })
+
+        if (!res.ok) {
+          const errMsg = await res.text()
+          throw new Error(errMsg || 'Đăng ký tài khoản thất bại.')
+        }
+
+        alert('Đăng ký tài khoản thành công! Vui lòng đăng nhập.')
         isLoginMode.value = true
-        authForm.value.username = ''
         authForm.value.password = ''
       } catch (err) {
         errorMsg.value = err.message

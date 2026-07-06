@@ -89,6 +89,25 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<PharmacyDbContext>();
     db.Database.EnsureCreated();
 
+    // Add PhoneNumber column if not exists
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            IF NOT EXISTS (
+                SELECT * FROM sys.columns 
+                WHERE object_id = OBJECT_ID(N'[Users]') 
+                AND name = N'PhoneNumber'
+            )
+            BEGIN
+                ALTER TABLE [Users] ADD [PhoneNumber] NVARCHAR(MAX) NOT NULL DEFAULT '';
+            END
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not alter table Users to add PhoneNumber: {ex.Message}");
+    }
+
     if (!db.Users.Any())
     {
         db.Users.AddRange(

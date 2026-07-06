@@ -1,4 +1,4 @@
-﻿version: '3.4'
+version: '3.4'
 
 services:
   pharmacy-db:
@@ -7,7 +7,7 @@ services:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Your_Strong_Password_123
     ports:
-      - "1433:1433"
+      - "1434:1433"
     volumes:
       - pharmacy_data:/var/opt/mssql
     healthcheck:
@@ -25,7 +25,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     ports:
-      - "5000:8080"
+      - "5001:8080"
     depends_on:
       pharmacy-db:
         condition: service_healthy
