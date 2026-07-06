@@ -99,6 +99,18 @@ namespace AppointmentService.API.Controllers
                     return BadRequest("Benh nhan da dat mot lich hen khac voi bac si nay trong cung ngay.");
                 }
 
+                // 4.1. Conflict slot check (Same Doctor + Same Date + Same TimeSlot)
+                var slotConflicted = await _appointmentRepository.GetQueryable()
+                    .AnyAsync(a => a.DoctorId == bookDto.DoctorId &&
+                                   a.AppointmentDate.Date == bookDto.AppointmentDate.Date &&
+                                   a.TimeSlot == timeSlot &&
+                                   a.Status != AppointmentStatus.DaHuy);
+
+                if (slotConflicted)
+                {
+                    return BadRequest("Khung gio hen nay cua bac si da co benh nhan khac dang ky kham.");
+                }
+
                 // 5. Check capacity (Active + Pending appointments count against MaxPatients)
                 var activeBookingsCount = await _appointmentRepository.GetQueryable()
                     .CountAsync(a => a.ScheduleId == bookDto.ScheduleId && a.Status != AppointmentStatus.DaHuy);
@@ -347,6 +359,31 @@ namespace AppointmentService.API.Controllers
                 }).ToList();
 
                 return Ok(dtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Loi he thong: {ex.Message}");
+            }
+        }
+
+        // GET: api/appointments/booked-slots
+        [HttpGet("booked-slots")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<string>>> GetBookedSlots(
+            [FromQuery] Guid doctorId,
+            [FromQuery] DateTime date)
+        {
+            try
+            {
+                var bookedSlots = await _appointmentRepository.GetQueryable()
+                    .Where(a => a.DoctorId == doctorId &&
+                                a.AppointmentDate.Date == date.Date &&
+                                a.Status != AppointmentStatus.DaHuy)
+                    .Select(a => a.TimeSlot)
+                    .ToListAsync();
+
+                var slotStrings = bookedSlots.Select(ts => ts.ToString(@"hh\:mm\:ss")).ToList();
+                return Ok(slotStrings);
             }
             catch (Exception ex)
             {

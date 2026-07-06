@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="MedicalRecordService.Api/MedicalRecordService.Api.csproj" />
+  <Project Path="MedicalRecordService.Data/MedicalRecordService.Data.csproj" />
+  <Project Path="MedicalRecordService.Models/MedicalRecordService.Models.csproj" />
+</Solution>

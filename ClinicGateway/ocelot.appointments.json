@@ -1,0 +1,184 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/doctors",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/doctors",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/schedules/available",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/schedules/available",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/appointments/book",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/book",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/appointments/booked-slots",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/booked-slots",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/appointments/by-phone/{phone}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/by-phone/{phone}",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/active",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/tv",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/testauth/token",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/testauth/token",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/appointments/pending",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/appointments/pending",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/confirm-appointment/{appointmentId}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/confirm-appointment/{appointmentId}",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/active",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/active",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/queue/status",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/queue/status",
+      "UpstreamHttpMethod": [ "PUT" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/doctors/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/doctors/{id}",
+      "UpstreamHttpMethod": [ "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/schedules",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "26.88.31.108",
+          "Port": 5000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/appointments-service/schedules",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    }
+  ]
+}

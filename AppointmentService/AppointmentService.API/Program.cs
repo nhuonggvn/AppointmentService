@@ -27,6 +27,7 @@ namespace AppointmentService.API
 
             // 3. Add Controllers
             builder.Services.AddControllers();
+            builder.Services.AddHealthChecks();
 
             // 4. Add CORS
             builder.Services.AddCors(options =>
@@ -119,6 +120,7 @@ namespace AppointmentService.API
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHealthChecks("/health");
 
             // Auto-initialize & Seed Database với cơ chế retry (quan trọng khi chạy Docker)
             var retryCount = 10;

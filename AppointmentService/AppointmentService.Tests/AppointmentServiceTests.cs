@@ -332,5 +332,150 @@ namespace AppointmentService.Tests
             Assert.Equal(2, newQueue.QueueNumber);
             Assert.Equal(QueueStatus.ChoKham, newQueue.Status);
         }
+
+        [Fact]
+        public async Task BookAppointment_Fail_WhenSlotIsConflicted()
+        {
+            // Arrange
+            using var context = GetInMemoryDbContext();
+            var doctorRepo = new Repository<Doctor>(context);
+            var scheduleRepo = new Repository<DoctorSchedule>(context);
+            var appointmentRepo = new Repository<Appointment>(context);
+
+            var doctor = new Doctor
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Nguyen Van An",
+                Specialty = "Noi khoa",
+                IsActive = true
+            };
+            await doctorRepo.AddAsync(doctor);
+
+            var schedule = new DoctorSchedule
+            {
+                Id = Guid.NewGuid(),
+                DoctorId = doctor.Id,
+                Date = DateTime.Today,
+                Shift = ShiftType.Sang,
+                StartTime = new TimeSpan(8, 0, 0),
+                EndTime = new TimeSpan(11, 30, 0),
+                MaxPatients = 5,
+                CurrentBookings = 1
+            };
+            await scheduleRepo.AddAsync(schedule);
+
+            // Gieo giac mot lich hen ton tai luc 09:00:00 cua bac si nay
+            var existingAppointment = new Appointment
+            {
+                Id = Guid.NewGuid(),
+                AppointmentCode = "LH111111",
+                PatientName = "Benh nhan X",
+                PatientPhone = "0999999999",
+                AppointmentDate = DateTime.Today,
+                TimeSlot = new TimeSpan(9, 0, 0),
+                DoctorId = doctor.Id,
+                ScheduleId = schedule.Id,
+                Status = AppointmentStatus.ChoXacNhan
+            };
+            await appointmentRepo.AddAsync(existingAppointment);
+            await context.SaveChangesAsync();
+
+            var controller = new AppointmentsController(appointmentRepo, scheduleRepo, doctorRepo);
+
+            // Benh nhan Y yeu cau dat lich cung bac si, cung ngay, cung khung gio 09:00:00
+            var bookDto = new BookAppointmentDto
+            {
+                PatientName = "Benh nhan Y",
+                PatientPhone = "0987654321",
+                PatientEmail = "y.benhnhan@gmail.com",
+                AppointmentDate = DateTime.Today,
+                TimeSlot = "09:00:00",
+                DoctorId = doctor.Id,
+                ScheduleId = schedule.Id,
+                Notes = "Kham tim mach"
+            };
+
+            // Act
+            var actionResult = await controller.BookAppointment(bookDto);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(actionResult.Result);
+            Assert.Equal("Khung gio hen nay cua bac si da co benh nhan khac dang ky kham.", badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task GetBookedSlots_ReturnCorrectSlots()
+        {
+            // Arrange
+            using var context = GetInMemoryDbContext();
+            var doctorRepo = new Repository<Doctor>(context);
+            var scheduleRepo = new Repository<DoctorSchedule>(context);
+            var appointmentRepo = new Repository<Appointment>(context);
+
+            var doctor = new Doctor
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Nguyen Van An",
+                Specialty = "Noi khoa",
+                IsActive = true
+            };
+            await doctorRepo.AddAsync(doctor);
+
+            var schedule = new DoctorSchedule
+            {
+                Id = Guid.NewGuid(),
+                DoctorId = doctor.Id,
+                Date = DateTime.Today,
+                Shift = ShiftType.Sang,
+                StartTime = new TimeSpan(8, 0, 0),
+                EndTime = new TimeSpan(11, 30, 0),
+                MaxPatients = 5,
+                CurrentBookings = 2
+            };
+            await scheduleRepo.AddAsync(schedule);
+
+            // Gieo giac hai lich hen (mot lich hoat dong va mot lich bi huy)
+            var appointment1 = new Appointment
+            {
+                Id = Guid.NewGuid(),
+                AppointmentCode = "LH111111",
+                PatientName = "Benh nhan X",
+                PatientPhone = "0999999999",
+                AppointmentDate = DateTime.Today,
+                TimeSlot = new TimeSpan(9, 0, 0),
+                DoctorId = doctor.Id,
+                ScheduleId = schedule.Id,
+                Status = AppointmentStatus.ChoXacNhan
+            };
+            var appointment2 = new Appointment
+            {
+                Id = Guid.NewGuid(),
+                AppointmentCode = "LH222222",
+                PatientName = "Benh nhan Y",
+                PatientPhone = "0888888888",
+                AppointmentDate = DateTime.Today,
+                TimeSlot = new TimeSpan(10, 0, 0),
+                DoctorId = doctor.Id,
+                ScheduleId = schedule.Id,
+                Status = AppointmentStatus.DaHuy // Bi huy, khong duoc tra ve trong booked-slots
+            };
+
+            await appointmentRepo.AddAsync(appointment1);
+            await appointmentRepo.AddAsync(appointment2);
+            await context.SaveChangesAsync();
+
+            var controller = new AppointmentsController(appointmentRepo, scheduleRepo, doctorRepo);
+
+            // Act
+            var actionResult = await controller.GetBookedSlots(doctor.Id, DateTime.Today);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
+            var slots = Assert.IsType<List<string>>(okResult.Value);
+            
+            Assert.Single(slots);
+            Assert.Contains("09:00:00", slots);
+            Assert.DoesNotContain("10:00:00", slots);
+        }
     }
 }

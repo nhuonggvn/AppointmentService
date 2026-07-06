@@ -1,0 +1,6 @@
+--phần chọn bác sĩ : làm theo dạng ngang 
+-- chia nhỏ ca (giờ làm)
+-- xem được bác sĩ đó có còn lịch rảnh không , nếu khung giờ đó có người thì sẽ hiện màu đỏ còn trống thì sẽ màu xanh
+-- phần đăng xuất ở phần góc trên bên phải của trang web
+-- admin những chức năng quản lí phải có núi import 
+-- phải có phân trang cho các danh sách 

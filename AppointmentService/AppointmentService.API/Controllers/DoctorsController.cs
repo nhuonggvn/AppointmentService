@@ -54,6 +54,7 @@ namespace AppointmentService.API.Controllers
                     FullName = d.FullName,
                     Specialty = d.Specialty,
                     Qualifications = d.Qualifications,
+                    Gender = d.Gender,
                     ConsultationFee = d.ConsultationFee,
                     IsActive = d.IsActive
                 }).ToList();
@@ -86,6 +87,7 @@ namespace AppointmentService.API.Controllers
                     FullName = doctor.FullName,
                     Specialty = doctor.Specialty,
                     Qualifications = doctor.Qualifications,
+                    Gender = doctor.Gender,
                     ConsultationFee = doctor.ConsultationFee,
                     IsActive = doctor.IsActive
                 };
@@ -126,6 +128,7 @@ namespace AppointmentService.API.Controllers
                     FullName = createDoctorDto.FullName,
                     Specialty = createDoctorDto.Specialty,
                     Qualifications = createDoctorDto.Qualifications,
+                    Gender = createDoctorDto.Gender,
                     ConsultationFee = createDoctorDto.ConsultationFee,
                     IsActive = true
                 };
@@ -144,6 +147,7 @@ namespace AppointmentService.API.Controllers
                     FullName = doctor.FullName,
                     Specialty = doctor.Specialty,
                     Qualifications = doctor.Qualifications,
+                    Gender = doctor.Gender,
                     ConsultationFee = doctor.ConsultationFee,
                     IsActive = doctor.IsActive
                 };
@@ -188,6 +192,7 @@ namespace AppointmentService.API.Controllers
                 doctor.FullName = updateDoctorDto.FullName;
                 doctor.Specialty = updateDoctorDto.Specialty;
                 doctor.Qualifications = updateDoctorDto.Qualifications;
+                doctor.Gender = updateDoctorDto.Gender;
                 doctor.ConsultationFee = updateDoctorDto.ConsultationFee;
 
                 _doctorRepository.Update(doctor);
