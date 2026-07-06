@@ -4576,13 +4576,13 @@ export default {
 
     // Watch tab changes to auto-load data for the selected tab
     watch(activeTab, (newTab) => {
-      if (newTab === 'reception' && jwtToken.value) {
+      if (newTab === 'reception' && jwtToken.value && hasRole('Admin, Receptionist')) {
         fetchPendingAppointments()
-      } else if (newTab === 'doctor' && doctorPortal.value.doctorId) {
+      } else if (newTab === 'doctor' && doctorPortal.value.doctorId && hasRole('Doctor')) {
         fetchDoctorActiveQueue()
       } else if (newTab === 'tv') {
         fetchTvQueue()
-      } else if (newTab === 'pharmacy' && jwtToken.value) {
+      } else if (newTab === 'pharmacy' && jwtToken.value && hasRole('Admin, Nurse, Receptionist')) {
         fetchBills()
       }
     })
@@ -4597,8 +4597,10 @@ export default {
       // Giải mã và phục hồi trạng thái từ token có sẵn trong localStorage
       if (currentUser.value.token) {
         syncUserFromToken(currentUser.value.token)
-        fetchBills()
-        fetchDrugs()
+        if (hasRole('Admin, Nurse, Receptionist, Doctor')) {
+          fetchBills()
+          fetchDrugs()
+        }
       }
 
       fetchDoctors()
@@ -4607,16 +4609,16 @@ export default {
       // Set interval for TV board every 5s
       tvInterval = setInterval(() => {
         fetchTvQueue()
-        if (activeTab.value === 'doctor') {
+        if (activeTab.value === 'doctor' && hasRole('Doctor')) {
           fetchDoctorActiveQueue()
         }
-        if (activeTab.value === 'reception' && jwtToken.value) {
+        if (activeTab.value === 'reception' && jwtToken.value && hasRole('Admin, Receptionist')) {
           fetchPendingAppointments()
         }
-        if (activeTab.value === 'pharmacy' && jwtToken.value) {
+        if (activeTab.value === 'pharmacy' && jwtToken.value && hasRole('Admin, Nurse, Receptionist')) {
           fetchDrugs()
         }
-        if (activeTab.value === 'billing' && jwtToken.value) {
+        if (activeTab.value === 'billing' && jwtToken.value && hasRole('Admin, Nurse, Receptionist')) {
           fetchBills()
         }
       }, 5000)

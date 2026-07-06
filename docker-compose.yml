@@ -5,6 +5,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStrong@Password123
+      - SQLSERVR_MEM_LIMIT=1500
     ports:
       - "1433:1433"
     volumes:
@@ -51,6 +52,24 @@ services:
       - "3000:3000"
     depends_on:
       - gateway
+    restart: always
+
+  pharmacy-service:
+    image: pharmacy-service:latest
+    container_name: pharmacy_api
+    build:
+      context: ./PharmacyService
+      dockerfile: PharmacyBillingService/Dockerfile
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=PharmacyDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - JwtSettings__SecretKey=ThisIsMySuperSecretKeyForJwtTokenDoNotShareIt12345
+      - JwtSettings__Issuer=PharmacyBillingService
+      - JwtSettings__Audience=MicroservicesClient
+    depends_on:
+      - db
     restart: always
 
 volumes:
