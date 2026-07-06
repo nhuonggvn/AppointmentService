@@ -241,7 +241,7 @@ export default {
     const errorMsg = ref('')
 
     const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
-    const gatewayApiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
+    const gatewayApiUrl = ref(localStorage.getItem('clinic_api_url') || import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
     const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.79.10.201:5000/api')
 
     const authForm = ref({

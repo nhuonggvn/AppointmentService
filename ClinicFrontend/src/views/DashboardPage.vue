@@ -2395,7 +2395,7 @@ export default {
     const drugFilterUnit = ref('')
     const drugFilterStockRange = ref('all') // 'all', 'low', 'medium', 'high'
     
-    const apiUrl = ref(localStorage.getItem('clinic_api_url') || 'http://localhost:5000/api')
+    const apiUrl = ref(localStorage.getItem('clinic_api_url') || import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
     const authApiUrl = ref(localStorage.getItem('clinic_auth_api_url') || 'http://26.71.15.204:5000/api')
     const medicalApiUrl = ref(localStorage.getItem('clinic_medical_api_url') || 'http://26.15.45.202:5000/api')
     
