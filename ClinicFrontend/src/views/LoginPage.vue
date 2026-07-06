@@ -331,6 +331,7 @@ export default {
         const data = await res.json()
 
         localStorage.setItem('clinic_jwt_token', data.token)
+        localStorage.setItem('clinic_user_phone', data.phoneNumber || '')
 
         const decoded = decodeJwt(data.token)
         let role = 'Patient'

@@ -68,7 +68,8 @@ namespace PharmacyBillingService.Controllers
             {
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 username = user.Username,
-                role = user.Role
+                role = user.Role,
+                phoneNumber = user.PhoneNumber
             });
         }
 
@@ -136,7 +137,7 @@ namespace PharmacyBillingService.Controllers
                 return NotFound();
             }
 
-            return Ok(new { user.Id, user.Username, user.Role });
+            return Ok(new { user.Id, user.Username, user.Role, user.PhoneNumber });
         }
     }
 }

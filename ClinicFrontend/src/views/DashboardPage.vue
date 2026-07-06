@@ -380,7 +380,7 @@
                 <v-card border flat class="bg-surface pa-6 mb-6">
                   <div class="d-flex align-center mb-4">
                     <v-icon icon="mdi-doctor" color="primary" class="mr-2" />
-                    <h2 class="text-h6 font-weight-bold">Bước 1: Chọn bác sĩ & ca khám</h2>
+                    <h2 class="text-h6 font-weight-bold">1. Chọn bác sĩ và ca khám.</h2>
                   </div>
 
                   <!-- Specialty filter and Name search -->
@@ -511,30 +511,37 @@
                 <v-card border flat class="bg-surface pa-6">
                   <div class="d-flex align-center mb-4">
                     <v-icon icon="mdi-account-details" color="success" class="mr-2" />
-                    <h2 class="text-h6 font-weight-bold">Bước 2: Thông tin bệnh nhân</h2>
+                    <h2 class="text-h6 font-weight-bold">2. Triệu chứng</h2>
                   </div>
 
                   <v-form @submit.prevent="bookAppointment">
-                    <v-text-field
-                      v-model="bookingForm.patientName"
-                      label="Họ và tên Bệnh nhân"
-                      variant="outlined"
-                      class="mb-3"
-                      required
-                    />
-                    <v-text-field
-                      v-model="bookingForm.patientPhone"
-                      label="Số điện thoại liên hệ"
-                      variant="outlined"
-                      class="mb-3"
-                      required
-                    />
-                    <v-text-field
-                      v-model="bookingForm.patientEmail"
-                      label="Email liên hệ"
-                      variant="outlined"
-                      class="mb-3"
-                    />
+                    <template v-if="!currentUser.token">
+                      <v-text-field
+                        v-model="bookingForm.patientName"
+                        label="Họ và tên Bệnh nhân"
+                        variant="outlined"
+                        class="mb-3"
+                        required
+                      />
+                      <v-text-field
+                        v-model="bookingForm.patientPhone"
+                        label="Số điện thoại liên hệ"
+                        variant="outlined"
+                        class="mb-3"
+                        required
+                      />
+                      <v-text-field
+                        v-model="bookingForm.patientEmail"
+                        label="Email liên hệ"
+                        variant="outlined"
+                        class="mb-3"
+                      />
+                    </template>
+                    <div v-else class="mb-4 pa-4 rounded bg-blue-lighten-5 border text-body-2">
+                      <div>Bệnh nhân: <strong>{{ bookingForm.patientName || currentUser.username }}</strong></div>
+                      <div>Số điện thoại: <strong>{{ bookingForm.patientPhone || currentUser.phone }}</strong></div>
+                      <div v-if="bookingForm.patientEmail">Email: <strong>{{ bookingForm.patientEmail }}</strong></div>
+                    </div>
                     
                     <!-- Choose specific time slot inside shift hours -->
                     <div class="mb-3">
@@ -2492,7 +2499,10 @@ export default {
     const currentUser = ref({
       username: localStorage.getItem('clinic_user_name') || '',
       role: localStorage.getItem('clinic_user_role') || '',
-      token: localStorage.getItem('clinic_jwt_token') || ''
+      token: localStorage.getItem('clinic_jwt_token') || '',
+      phone: localStorage.getItem('clinic_user_phone') || '',
+      fullName: localStorage.getItem('clinic_user_fullname') || '',
+      email: localStorage.getItem('clinic_user_email') || ''
     })
 
     // Pagination refs
@@ -3051,6 +3061,18 @@ export default {
           return
         }
 
+        if (currentUser.value.token) {
+          if (!bookingForm.value.patientPhone) {
+            bookingForm.value.patientPhone = currentUser.value.phone || '0000000000'
+          }
+          if (!bookingForm.value.patientName) {
+            bookingForm.value.patientName = currentUser.value.fullName || currentUser.value.username || 'Bệnh nhân'
+          }
+          if (!bookingForm.value.patientEmail) {
+            bookingForm.value.patientEmail = currentUser.value.email || ''
+          }
+        }
+
         const url = `${apiUrl.value}/appointments/book`
         const res = await fetch(url, {
           method: 'POST',
@@ -3536,10 +3558,13 @@ export default {
     }
 
     const handleLogout = () => {
-      currentUser.value = { username: '', role: '', token: '' }
+      currentUser.value = { username: '', role: '', token: '', phone: '', fullName: '', email: '' }
       localStorage.removeItem('clinic_user_name')
       localStorage.removeItem('clinic_user_role')
       localStorage.removeItem('clinic_jwt_token')
+      localStorage.removeItem('clinic_user_phone')
+      localStorage.removeItem('clinic_user_fullname')
+      localStorage.removeItem('clinic_user_email')
       router.push({ name: 'Landing' })
     }
 
@@ -4072,8 +4097,14 @@ export default {
             const data = await res.json()
             patientProfile.value = {
               phone: phone,
+              fullName: data.fullName || '',
               allergies: data.allergies || 'Không',
               medicalHistory: data.medicalHistory || 'Không'
+            }
+            if (data.fullName) {
+              bookingForm.value.patientName = data.fullName
+              currentUser.value.fullName = data.fullName
+              localStorage.setItem('clinic_user_fullname', data.fullName)
             }
           } else {
             patientProfile.value = {
@@ -4597,6 +4628,18 @@ export default {
       // Giải mã và phục hồi trạng thái từ token có sẵn trong localStorage
       if (currentUser.value.token) {
         syncUserFromToken(currentUser.value.token)
+        currentUser.value.phone = localStorage.getItem('clinic_user_phone') || ''
+        currentUser.value.fullName = localStorage.getItem('clinic_user_fullname') || ''
+        currentUser.value.email = localStorage.getItem('clinic_user_email') || ''
+        
+        if (currentUser.value.phone) {
+          bookingForm.value.patientPhone = currentUser.value.phone
+          bookingForm.value.patientName = currentUser.value.fullName || currentUser.value.username
+          bookingForm.value.patientEmail = currentUser.value.email
+        }
+        
+        fetchMe()
+
         if (hasRole('Admin, Nurse, Receptionist, Doctor')) {
           fetchBills()
           fetchDrugs()
@@ -5447,9 +5490,32 @@ export default {
       }
     })
 
+    const fetchMe = async () => {
+      if (!currentUser.value.token) return
+      try {
+        const url = `${authApiUrl.value}/Auth/me`
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          currentUser.value.phone = data.phoneNumber || data.phone || ''
+          localStorage.setItem('clinic_user_phone', currentUser.value.phone)
+          
+          if (currentUser.value.phone) {
+            bookingForm.value.patientPhone = currentUser.value.phone
+            await fetchPatientProfile(currentUser.value.phone)
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi lấy thông tin cá nhân:', err)
+      }
+    }
+
     // --- END OF INTEGRATED LOGIC ---
 
 return {
+      fetchMe,
       selectedScheduleIds,
       isAllSchedulesSelected,
       deleteSelectedSchedules,
