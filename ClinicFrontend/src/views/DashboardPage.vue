@@ -1755,7 +1755,7 @@
                             </td>
                             <td class="text-center">
                               <v-btn icon="mdi-pencil" size="x-small" variant="text" color="info" class="mr-1" @click="editDoctor(doc)" />
-                              <v-btn icon="mdi-power" size="x-small" variant="text" :color="doc.isActive ? 'error' : 'success'" @click="deleteDoctorInfo(doc.id)" />
+                              <v-btn icon="mdi-delete" size="x-small" variant="text" color="error" @click="deleteDoctorInfo(doc.id)" />
                             </td>
                           </tr>
                         </tbody>
@@ -1778,99 +1778,13 @@
               <!-- Subtab 2: Quản lý Lịch trực -->
               <v-window-item value="schedules-management">
                 <v-row>
-                  <!-- Form Thêm lịch trực -->
-                  <v-col cols="12" md="4">
-                    <v-card border flat class="bg-surface pa-6 mb-6">
-                      <div class="text-h6 font-weight-bold mb-4 text-primary">Tạo Lịch trực Bác sĩ</div>
-                      <v-form @submit.prevent="createAdminSchedule">
-                        <v-select
-                          v-model="adminScheduleForm.doctorId"
-                          :items="doctors"
-                          item-title="fullName"
-                          item-value="id"
-                          label="Chọn Bác sĩ"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                        />
-                        <v-text-field
-                          v-model="adminScheduleForm.date"
-                          label="Ngày trực"
-                          type="date"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                        />
-                        <v-select
-                          v-model="adminScheduleForm.shiftType"
-                          :items="['Sang', 'Chieu', 'Toi']"
-                          label="Ca khám"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-3"
-                          required
-                          @update:model-value="(val) => {
-                            if (val === 'Sang') {
-                              adminScheduleForm.startTime = '08:00:00';
-                              adminScheduleForm.endTime = '12:00:00';
-                            } else if (val === 'Chieu') {
-                              adminScheduleForm.startTime = '13:30:00';
-                              adminScheduleForm.endTime = '17:30:00';
-                            } else {
-                              adminScheduleForm.startTime = '18:00:00';
-                              adminScheduleForm.endTime = '21:00:00';
-                            }
-                          }"
-                        />
-                        <v-row dense>
-                          <v-col cols="6">
-                            <v-text-field
-                              v-model="adminScheduleForm.startTime"
-                              label="Giờ bắt đầu"
-                              placeholder="08:00:00"
-                              variant="outlined"
-                              density="comfortable"
-                              class="mb-3"
-                              required
-                            />
-                          </v-col>
-                          <v-col cols="6">
-                            <v-text-field
-                              v-model="adminScheduleForm.endTime"
-                              label="Giờ kết thúc"
-                              placeholder="12:00:00"
-                              variant="outlined"
-                              density="comfortable"
-                              class="mb-3"
-                              required
-                            />
-                          </v-col>
-                        </v-row>
-                        <v-text-field
-                          v-model.number="adminScheduleForm.maxPatients"
-                          label="Số bệnh nhân tối đa"
-                          type="number"
-                          variant="outlined"
-                          density="comfortable"
-                          class="mb-4"
-                          required
-                        />
-                        <v-btn type="submit" color="primary" block size="large" class="font-weight-bold" :loading="loading">
-                          Lưu Lịch Trực
-                        </v-btn>
-                      </v-form>
-                    </v-card>
-                  </v-col>
-
-                  <!-- Bảng Lịch trực hiện tại -->
-                  <v-col cols="12" md="8">
+                  <!-- Bảng Lịch trực hiện tại (Trải rộng 100%) -->
+                  <v-col cols="12">
                     <v-card border flat class="bg-surface pa-6 mb-6">
                       <div class="d-flex justify-space-between align-center mb-4">
                         <div class="text-h6 font-weight-bold text-primary mb-0">Lịch phân ca trực bác sĩ</div>
-                        <div>
-                          <v-btn color="info" size="small" prepend-icon="mdi-upload" class="font-weight-bold" @click="triggerScheduleImport">
+                        <div class="d-flex gap-2">
+                          <v-btn color="info" prepend-icon="mdi-upload" class="font-weight-bold" @click="triggerScheduleImport">
                             Import Lịch trực
                           </v-btn>
                           <input
@@ -1880,21 +1794,49 @@
                             style="display: none;"
                             @change="handleScheduleImport"
                           />
+                          <v-btn
+                            v-if="selectedScheduleIds.length > 0"
+                            color="error"
+                            prepend-icon="mdi-trash-can"
+                            class="font-weight-bold"
+                            @click="deleteSelectedSchedules"
+                          >
+                            Xóa đã chọn ({{ selectedScheduleIds.length }})
+                          </v-btn>
+                          <v-btn color="success" prepend-icon="mdi-plus" class="font-weight-bold" @click="openAddScheduleDialog">
+                            Thêm Lịch Trực
+                          </v-btn>
                         </div>
                       </div>
                       
                       <v-table density="comfortable" class="bg-surface rounded border">
                         <thead>
                           <tr>
+                            <th class="text-left font-weight-bold" style="width: 50px;">
+                              <v-checkbox
+                                v-model="isAllSchedulesSelected"
+                                hide-details
+                                density="compact"
+                              />
+                            </th>
                             <th class="text-left font-weight-bold">Bác sĩ</th>
                             <th class="text-left font-weight-bold">Ngày trực</th>
                             <th class="text-left font-weight-bold">Ca</th>
                             <th class="text-left font-weight-bold">Khung giờ</th>
                             <th class="text-left font-weight-bold">Bệnh nhân đã đặt</th>
+                            <th class="text-center font-weight-bold">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr v-for="sch in paginatedSchedules" :key="sch.id">
+                            <td>
+                              <v-checkbox
+                                v-model="selectedScheduleIds"
+                                :value="sch.id"
+                                hide-details
+                                density="compact"
+                              />
+                            </td>
                             <td class="font-weight-bold">{{ sch.doctorName }}</td>
                             <td>{{ formatDate(sch.date) }}</td>
                             <td>
@@ -1906,14 +1848,18 @@
                             <td>
                               <strong>{{ sch.currentBookings }}</strong> / {{ sch.maxPatients }}
                             </td>
+                            <td class="text-center">
+                              <v-btn icon="mdi-pencil" size="x-small" variant="text" color="info" class="mr-1" @click="editSchedule(sch)" />
+                              <v-btn icon="mdi-delete" size="x-small" variant="text" color="error" @click="deleteAdminSchedule(sch.id)" />
+                            </td>
                           </tr>
                           <tr v-if="adminSchedules.length === 0">
-                            <td colspan="5" class="text-center text-grey py-4">Chưa có lịch phân ca nào được tải hoặc thiết lập</td>
+                            <td colspan="7" class="text-center text-grey py-4">Chưa có lịch phân ca nào được tải hoặc thiết lập</td>
                           </tr>
                         </tbody>
                       </v-table>
                       <!-- Pagination for Schedules -->
-                      <div v-if="adminSchedules.length > 5" class="d-flex justify-center mt-4">
+                      <div v-if="adminSchedules.length > 10" class="d-flex justify-center mt-4">
                         <v-pagination
                           v-model="schedulePage"
                           :length="schedulePageCount"
@@ -1925,6 +1871,100 @@
                     </v-card>
                   </v-col>
                 </v-row>
+
+                <!-- Dialog Thêm/Sửa Lịch trực -->
+                <v-dialog v-model="addScheduleDialog" max-width="500">
+                  <v-card class="rounded-xl pa-6 bg-surface">
+                    <div class="text-h6 font-weight-bold mb-4 text-primary">
+                      {{ isEditingSchedule ? 'Cập nhật Lịch trực Bác sĩ' : 'Tạo Lịch trực Bác sĩ' }}
+                    </div>
+                    <v-form @submit.prevent="createAdminSchedule">
+                      <v-select
+                        v-model="adminScheduleForm.doctorId"
+                        :items="doctors"
+                        item-title="fullName"
+                        item-value="id"
+                        label="Chọn Bác sĩ"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                        required
+                        :disabled="isEditingSchedule"
+                      />
+                      <v-text-field
+                        v-model="adminScheduleForm.date"
+                        label="Ngày trực"
+                        type="date"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                        required
+                      />
+                      <v-select
+                        v-model="adminScheduleForm.shiftType"
+                        :items="['Sang', 'Chieu', 'Toi']"
+                        label="Ca khám"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                        required
+                        @update:model-value="(val) => {
+                          if (val === 'Sang') {
+                            adminScheduleForm.startTime = '08:00:00';
+                            adminScheduleForm.endTime = '12:00:00';
+                          } else if (val === 'Chieu') {
+                            adminScheduleForm.startTime = '13:30:00';
+                            adminScheduleForm.endTime = '17:30:00';
+                          } else {
+                            adminScheduleForm.startTime = '18:00:00';
+                            adminScheduleForm.endTime = '21:00:00';
+                          }
+                        }"
+                      />
+                      <v-row dense>
+                        <v-col cols="6">
+                          <v-text-field
+                            v-model="adminScheduleForm.startTime"
+                            label="Giờ bắt đầu"
+                            placeholder="08:00:00"
+                            variant="outlined"
+                            density="comfortable"
+                            class="mb-3"
+                            required
+                          />
+                        </v-col>
+                        <v-col cols="6">
+                          <v-text-field
+                            v-model="adminScheduleForm.endTime"
+                            label="Giờ kết thúc"
+                            placeholder="12:00:00"
+                            variant="outlined"
+                            density="comfortable"
+                            class="mb-3"
+                            required
+                          />
+                        </v-col>
+                      </v-row>
+                      <v-text-field
+                        v-model.number="adminScheduleForm.maxPatients"
+                        label="Số bệnh nhân tối đa"
+                        type="number"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-4"
+                        required
+                      />
+                      <div class="d-flex justify-end gap-2">
+                        <v-btn variant="text" class="font-weight-bold" @click="addScheduleDialog = false">
+                          Hủy
+                        </v-btn>
+                        <v-btn type="submit" color="primary" class="font-weight-bold" :loading="loading">
+                          Lưu
+                        </v-btn>
+                      </div>
+                    </v-form>
+                  </v-card>
+                </v-dialog>
               </v-window-item>
 
               <!-- Subtab 3: Báo cáo Tài chính -->
@@ -2459,7 +2499,7 @@ export default {
     const doctorPage = ref(1)
     const doctorPageSize = 10
     const schedulePage = ref(1)
-    const schedulePageSize = 5
+    const schedulePageSize = 10
     const pendingPage = ref(1)
     const pendingPageSize = 5
 
@@ -4166,7 +4206,7 @@ export default {
 
     const deleteDoctorInfo = async (id) => {
       const docName = doctors.value.find(d => d.id === id)?.fullName || ''
-      if (!confirm(`Bạn có chắc chắn muốn ngừng kích hoạt bác sĩ ${docName}?`)) return
+      if (!confirm(`Bạn có chắc chắn muốn xóa bác sĩ ${docName}?`)) return
       try {
         loading.value = true
         if (isMockMode.value) {
@@ -4227,46 +4267,88 @@ export default {
     const createAdminSchedule = async () => {
       try {
         loading.value = true
-        const shiftVal = adminScheduleForm.value.shiftType === 'Sang' ? 0 : (adminScheduleForm.value.shiftType === 'Chieu' ? 1 : 2)
-        const newSchedule = {
+        const shiftVal = adminScheduleForm.value.shiftType === 'Sang' ? 1 : (adminScheduleForm.value.shiftType === 'Chieu' ? 2 : 3)
+        const payload = {
           doctorId: adminScheduleForm.value.doctorId,
           date: adminScheduleForm.value.date,
           startTime: adminScheduleForm.value.startTime,
           endTime: adminScheduleForm.value.endTime,
-          shiftType: shiftVal,
+          shift: shiftVal,
           maxPatients: adminScheduleForm.value.maxPatients
         }
 
-        if (isMockMode.value) {
-          const doc = doctors.value.find(d => d.id === newSchedule.doctorId)
-          adminSchedules.value.push({
-            id: 'sch_' + Math.random().toString(36).substr(2, 9),
-            doctorId: newSchedule.doctorId,
-            doctorName: doc ? doc.fullName : 'Bác sĩ giả lập',
-            date: newSchedule.date,
-            startTime: newSchedule.startTime,
-            endTime: newSchedule.endTime,
-            shiftType: adminScheduleForm.value.shiftType,
-            currentBookings: 0,
-            maxPatients: newSchedule.maxPatients
-          })
-          showAlert('Đã thêm lịch trực mới (Giả lập)', 'success')
-        } else {
-          const url = `${apiUrl.value}/schedules`
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${currentUser.value.token}`
-            },
-            body: JSON.stringify(newSchedule)
-          })
-          if (!res.ok) {
-            const errMsg = await res.text()
-            throw new Error(errMsg || 'Không thể tạo lịch trực mới')
+        if (isEditingSchedule.value) {
+          // UPDATE (PUT)
+          if (isMockMode.value) {
+            const idx = adminSchedules.value.findIndex(s => s.id === editingScheduleId.value)
+            if (idx !== -1) {
+              const doc = doctors.value.find(d => d.id === payload.doctorId)
+              adminSchedules.value[idx] = {
+                ...adminSchedules.value[idx],
+                doctorId: payload.doctorId,
+                doctorName: doc ? doc.fullName : 'Bác sĩ giả lập',
+                date: payload.date,
+                startTime: payload.startTime,
+                endTime: payload.endTime,
+                shift: adminScheduleForm.value.shiftType,
+                maxPatients: payload.maxPatients
+              }
+            }
+            showAlert('Đã cập nhật ca trực (Giả lập)', 'success')
+            addScheduleDialog.value = false
+          } else {
+            const url = `${apiUrl.value}/schedules/${editingScheduleId.value}`
+            const res = await fetch(url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUser.value.token}`
+              },
+              body: JSON.stringify(payload)
+            })
+            if (!res.ok) {
+              const errMsg = await res.text()
+              throw new Error(errMsg || 'Không thể cập nhật lịch trực')
+            }
+            await fetchAdminSchedules()
+            showAlert('Đã cập nhật lịch trực thành công!', 'success')
+            addScheduleDialog.value = false
           }
-          await fetchAdminSchedules()
-          showAlert('Đã tạo lịch trực mới thành công!', 'success')
+        } else {
+          // CREATE (POST)
+          if (isMockMode.value) {
+            const doc = doctors.value.find(d => d.id === payload.doctorId)
+            adminSchedules.value.push({
+              id: 'sch_' + Math.random().toString(36).substr(2, 9),
+              doctorId: payload.doctorId,
+              doctorName: doc ? doc.fullName : 'Bác sĩ giả lập',
+              date: payload.date,
+              startTime: payload.startTime,
+              endTime: payload.endTime,
+              shift: adminScheduleForm.value.shiftType,
+              currentBookings: 0,
+              maxPatients: payload.maxPatients
+            })
+            showAlert('Đã thêm lịch trực mới (Giả lập)', 'success')
+            addScheduleDialog.value = false
+          } else {
+            const url = `${apiUrl.value}/schedules`
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUser.value.token}`
+              },
+              body: JSON.stringify(payload)
+            })
+            if (!res.ok) {
+              const errMsg = await res.text()
+              throw new Error(errMsg || 'Không thể tạo lịch trực mới')
+            }
+            await fetchAdminSchedules()
+            showAlert('Đã tạo lịch trực mới thành công!', 'success')
+            addScheduleDialog.value = false
+          }
         }
       } catch (err) {
         showAlert(err.message, 'error')
@@ -5213,13 +5295,138 @@ export default {
       }
     }
     
+
+    // Schedules Dialog States
+    const addScheduleDialog = ref(false)
+    const isEditingSchedule = ref(false)
+    const editingScheduleId = ref(null)
+
+    const openAddScheduleDialog = () => {
+      isEditingSchedule.value = false
+      editingScheduleId.value = null
+      adminScheduleForm.value = {
+        doctorId: '',
+        date: '',
+        shiftType: 'Sang',
+        startTime: '08:00:00',
+        endTime: '12:00:00',
+        maxPatients: 10
+      }
+      addScheduleDialog.value = true
+    }
+
+    const editSchedule = (sch) => {
+      isEditingSchedule.value = true
+      editingScheduleId.value = sch.id
+      adminScheduleForm.value = {
+        doctorId: sch.doctorId,
+        date: sch.date ? sch.date.split('T')[0] : '',
+        shiftType: sch.shift, // In the ScheduleDto, Shift is returned as string e.g. 'Sang', 'Chieu', 'Toi'
+        startTime: sch.startTime,
+        endTime: sch.endTime,
+        maxPatients: sch.maxPatients
+      }
+      addScheduleDialog.value = true
+    }
+
+    const deleteAdminSchedule = async (id) => {
+      if (!confirm('Bạn có chắc chắn muốn xóa ca trực này?')) return
+      try {
+        loading.value = true
+        if (isMockMode.value) {
+          adminSchedules.value = adminSchedules.value.filter(s => s.id !== id)
+          showAlert('Đã xóa ca trực (Giả lập)', 'success')
+        } else {
+          const url = `${apiUrl.value}/schedules/${id}`
+          const res = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${currentUser.value.token}`
+            }
+          })
+          if (!res.ok) throw new Error('Không thể xóa ca trực')
+          await fetchAdminSchedules()
+          showAlert('Đã xóa ca trực thành công!', 'success')
+        }
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+    
+
+    // Schedule multi-selection & bulk deletion logic
+    const selectedScheduleIds = ref([])
+
+    const isAllSchedulesSelected = computed({
+      get: () => {
+        if (paginatedSchedules.value.length === 0) return false
+        return paginatedSchedules.value.every(s => selectedScheduleIds.value.includes(s.id))
+      },
+      set: (val) => {
+        if (val) {
+          paginatedSchedules.value.forEach(s => {
+            if (!selectedScheduleIds.value.includes(s.id)) {
+              selectedScheduleIds.value.push(s.id)
+            }
+          })
+        } else {
+          paginatedSchedules.value.forEach(s => {
+            const idx = selectedScheduleIds.value.indexOf(s.id)
+            if (idx !== -1) {
+              selectedScheduleIds.value.splice(idx, 1)
+            }
+          })
+        }
+      }
+    })
+
+    const deleteSelectedSchedules = async () => {
+      if (selectedScheduleIds.value.length === 0) return
+      if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedScheduleIds.value.length} ca trực đã chọn?`)) return
+      try {
+        loading.value = true
+        if (isMockMode.value) {
+          adminSchedules.value = adminSchedules.value.filter(s => !selectedScheduleIds.value.includes(s.id))
+          showAlert('Đã xóa các ca trực được chọn (Giả lập)', 'success')
+        } else {
+          for (const id of selectedScheduleIds.value) {
+            const url = `${apiUrl.value}/schedules/${id}`
+            const res = await fetch(url, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${currentUser.value.token}`
+              }
+            })
+            if (!res.ok) console.error(`Lỗi xóa ca trực ID ${id}`)
+          }
+          await fetchAdminSchedules()
+          showAlert('Đã xóa các ca trực đã chọn thành công!', 'success')
+        }
+        selectedScheduleIds.value = []
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+    
     // --- END OF INTEGRATED LOGIC ---
 
 return {
+      selectedScheduleIds,
+      isAllSchedulesSelected,
+      deleteSelectedSchedules,
+      addScheduleDialog,
+      isEditingSchedule,
+      editingScheduleId,
+      openAddScheduleDialog,
+      editSchedule,
+      deleteAdminSchedule,
       selectedDoctorIds,
       isAllDoctorsSelected,
       deleteSelectedDoctors,
-
       availableDrugUnits,
       billingSectionExpandedUnpaid,
       billingSectionExpandedPaid,

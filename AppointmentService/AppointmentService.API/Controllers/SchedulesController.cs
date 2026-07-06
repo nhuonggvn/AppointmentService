@@ -217,5 +217,117 @@ namespace AppointmentService.API.Controllers
                 return StatusCode(500, $"Loi he thong: {ex.Message}");
             }
         }
+
+        // PUT: api/schedules/{id}
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateSchedule(Guid id, [FromBody] CreateScheduleDto updateScheduleDto)
+        {
+            try
+            {
+                if (updateScheduleDto == null)
+                {
+                    return BadRequest("Du lieu khong hop le.");
+                }
+
+                var schedule = await _scheduleRepository.GetByIdAsync(id);
+                if (schedule == null)
+                {
+                    return NotFound($"Khong tim thay lich truc voi Id: {id}");
+                }
+
+                var doctor = await _doctorRepository.GetByIdAsync(updateScheduleDto.DoctorId);
+                if (doctor == null || !doctor.IsActive)
+                {
+                    return BadRequest("Bac si khong ton tai hoac da ngung hoat dong.");
+                }
+
+                if (!TimeSpan.TryParse(updateScheduleDto.StartTime, out var startTime))
+                {
+                    return BadRequest("Dinh dang gio bat dau khong hop le (hh:mm:ss).");
+                }
+
+                if (!TimeSpan.TryParse(updateScheduleDto.EndTime, out var endTime))
+                {
+                    return BadRequest("Dinh dang gio ket thuc khong hop le (hh:mm:ss).");
+                }
+
+                if (endTime <= startTime)
+                {
+                    return BadRequest("Gio ket thuc phai sau gio bat dau.");
+                }
+
+                if (updateScheduleDto.MaxPatients <= 0)
+                {
+                    return BadRequest("So luong benh nhan toi da phai lon hon 0.");
+                }
+
+                if (updateScheduleDto.Shift < 1 || updateScheduleDto.Shift > 3)
+                {
+                    return BadRequest("Ca lam viec khong hop le. 1: Sang, 2: Chieu, 3: Toi.");
+                }
+
+                var existingSchedule = await _scheduleRepository.GetQueryable()
+                    .FirstOrDefaultAsync(s => s.Id != id &&
+                                             s.DoctorId == updateScheduleDto.DoctorId && 
+                                             s.Date == updateScheduleDto.Date.Date && 
+                                             s.Shift == (ShiftType)updateScheduleDto.Shift);
+
+                if (existingSchedule != null)
+                {
+                    return BadRequest("Lich lam viec cho bac si vao ca nay va ngay nay da ton tai.");
+                }
+
+                schedule.DoctorId = updateScheduleDto.DoctorId;
+                schedule.Date = updateScheduleDto.Date.Date;
+                schedule.Shift = (ShiftType)updateScheduleDto.Shift;
+                schedule.StartTime = startTime;
+                schedule.EndTime = endTime;
+                schedule.MaxPatients = updateScheduleDto.MaxPatients;
+
+                _scheduleRepository.Update(schedule);
+                var result = await _scheduleRepository.SaveAsync();
+
+                if (!result)
+                {
+                    return StatusCode(500, "Khong the cap nhat lich truc.");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Loi he thong: {ex.Message}");
+            }
+        }
+
+        // DELETE: api/schedules/{id}
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteSchedule(Guid id)
+        {
+            try
+            {
+                var schedule = await _scheduleRepository.GetByIdAsync(id);
+                if (schedule == null)
+                {
+                    return NotFound($"Khong tim thay lich truc voi Id: {id}");
+                }
+
+                _scheduleRepository.Delete(schedule);
+                var result = await _scheduleRepository.SaveAsync();
+
+                if (!result)
+                {
+                    return StatusCode(500, "Khong the xoa lich truc.");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Loi he thong: {ex.Message}");
+            }
+        }
     }
 }
