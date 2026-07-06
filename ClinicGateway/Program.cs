@@ -12,8 +12,8 @@ namespace ClinicGateway
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1. Add Ocelot JSON Configuration
-            builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
+            // 1. Add Ocelot JSON Configuration and merge all ocelot.*.json files
+            builder.Configuration.AddOcelot(builder.Environment);
 
             // 2. Configure CORS
             builder.Services.AddCors(options =>
