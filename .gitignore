@@ -368,3 +368,7 @@ Hướng dẫn đề tài Fullstack.pdf
 /1.jpg
 /2.jpg
 /3.jpg
+
+# Exclude specific temporary docx files at the root
+/Kiến.docx
+/NHOM_5 - NGUYEN_VAN_HUONG (1).docx
