@@ -5412,6 +5412,39 @@ export default {
       }
     }
     
+    // Auto-fill patient information if phone number has booked before
+    watch(() => bookingForm.value.patientPhone, async (newPhone) => {
+      if (!newPhone) return
+      const cleanPhone = newPhone.trim()
+      if (cleanPhone.length >= 10) {
+        try {
+          if (isMockMode.value) {
+            // Check in mock pending appointments
+            const found = pendingAppointments.value.find(a => a.patientPhone === cleanPhone)
+            if (found) {
+              bookingForm.value.patientName = found.patientName
+              bookingForm.value.patientEmail = found.patientEmail
+              showAlert('Tự động điền thông tin bệnh nhân cũ (Giả lập)', 'success')
+            }
+          } else {
+            const url = `${apiUrl.value}/appointments/by-phone/${cleanPhone}`
+            const res = await fetch(url)
+            if (res.ok) {
+              const list = await res.json()
+              if (list && list.length > 0) {
+                const latest = list[0] // Sorted descending by Date + Time
+                bookingForm.value.patientName = latest.patientName
+                bookingForm.value.patientEmail = latest.patientEmail
+                showAlert('Đã tự động điền thông tin bệnh nhân từ lịch sử khám!', 'success')
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Lỗi tự động tra cứu thông tin bệnh nhân:', err)
+        }
+      }
+    })
+
     // --- END OF INTEGRATED LOGIC ---
 
 return {
