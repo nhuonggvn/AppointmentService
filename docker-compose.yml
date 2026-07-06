@@ -6,6 +6,7 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStrong@Password123
       - SQLSERVR_MEM_LIMIT=1500
+      - TZ=Asia/Ho_Chi_Minh
     ports:
       - "1433:1433"
     volumes:
@@ -23,6 +24,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db,1433;Database=AppointmentDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true
       - Jwt__Secret=ThisIsMySuperSecretKeyForJwtTokenDoNotShareIt12345
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - db
     restart: always
@@ -38,6 +40,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Jwt__Secret=ThisIsMySuperSecretKeyForJwtTokenDoNotShareIt12345
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - appointment-service
     restart: always
@@ -54,23 +57,24 @@ services:
       - gateway
     restart: always
 
-  pharmacy-service:
-    image: pharmacy-service:latest
-    container_name: pharmacy_api
-    build:
-      context: ./PharmacyService
-      dockerfile: PharmacyBillingService/Dockerfile
-    ports:
-      - "5001:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=PharmacyDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true
-      - JwtSettings__SecretKey=ThisIsMySuperSecretKeyForJwtTokenDoNotShareIt12345
-      - JwtSettings__Issuer=PharmacyBillingService
-      - JwtSettings__Audience=MicroservicesClient
-    depends_on:
-      - db
-    restart: always
+  # pharmacy-service:
+  #   image: pharmacy-service:latest
+  #   container_name: pharmacy_api
+  #   build:
+  #     context: ./PharmacyService
+  #     dockerfile: PharmacyBillingService/Dockerfile
+  #   ports:
+  #     - "5001:8080"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Server=db,1433;Database=PharmacyDB;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true
+  #     - JwtSettings__SecretKey=ThisIsMySuperSecretKeyForJwtTokenDoNotShareIt12345
+  #     - JwtSettings__Issuer=PharmacyBillingService
+  #     - JwtSettings__Audience=MicroservicesClient
+  #     - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     - db
+  #   restart: always
 
 volumes:
   mssql_data:

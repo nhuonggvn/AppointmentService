@@ -1847,7 +1847,7 @@
                             <td class="font-weight-bold">{{ sch.doctorName }}</td>
                             <td>{{ formatDate(sch.date) }}</td>
                             <td>
-                              <v-chip :color="sch.shiftType === 'Sang' ? 'success' : (sch.shiftType === 'Chieu' ? 'info' : 'warning')" size="small">
+                              <v-chip :color="sch.shiftType === 'Sáng' ? 'success' : (sch.shiftType === 'Chiều' ? 'info' : 'warning')" size="small">
                                 {{ sch.shiftType }}
                               </v-chip>
                             </td>
@@ -4287,7 +4287,7 @@ export default {
           return {
             ...s,
             doctorName: doc ? doc.fullName : 'Không xác định',
-            shiftType: s.shiftType === 0 ? 'Sang' : (s.shiftType === 1 ? 'Chieu' : 'Toi')
+            shiftType: s.shift === 'Sang' ? 'Sáng' : (s.shift === 'Chieu' ? 'Chiều' : 'Tối')
           }
         })
       } catch (err) {
