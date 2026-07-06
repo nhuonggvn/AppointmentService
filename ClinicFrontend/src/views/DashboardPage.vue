@@ -1164,18 +1164,73 @@
               </div>
             </div>
 
+            <!-- Search & Filter Section -->
+            <v-card border flat class="bg-surface pa-4 rounded-xl mb-4">
+              <div class="text-subtitle-2 font-weight-bold mb-4">Tìm kiếm & Lọc thuốc</div>
+              <v-row class="g-3">
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="drugSearchName"
+                    label="Tìm kiếm theo tên thuốc"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    clearable
+                    prepend-inner-icon="mdi-magnify"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-select
+                    v-model="drugFilterUnit"
+                    :items="availableDrugUnits"
+                    label="Lọc theo đơn vị"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    clearable
+                    prepend-inner-icon="mdi-ruler"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-select
+                    v-model="drugFilterStockRange"
+                    :items="[
+                      { title: 'Tất cả', value: 'all' },
+                      { title: 'Cảnh báo (<200)', value: 'low' },
+                      { title: 'Sắp hết (200-500)', value: 'medium' },
+                      { title: 'An toàn (>500)', value: 'high' }
+                    ]"
+                    item-title="title"
+                    item-value="value"
+                    label="Lọc theo tồn kho"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    prepend-inner-icon="mdi-warehouse"
+                  />
+                </v-col>
+              </v-row>
+              <v-row class="mt-2">
+                <v-col cols="12">
+                  <div class="text-caption text-grey-darken-1">
+                    Tìm thấy: <span class="font-weight-bold">{{ filteredDrugs.length }}</span> loại thuốc
+                  </div>
+                </v-col>
+              </v-row>
+            </v-card>
+
             <v-row>
               <!-- Canh bao ton kho thap -->
               <v-col cols="12" md="4">
                 <v-card border flat class="bg-surface pa-5 rounded-xl" style="border-color: rgba(133,24,0,0.2) !important; background-color: rgba(133,24,0,0.02) !important;">
-                  <div class="text-subtitle-2 font-weight-bold mb-3 text-warning d-flex align-center">
-                    <v-icon icon="mdi-alert-circle" class="mr-2" size="18" />
-                    Cảnh báo tồn kho thấp
+                  <div class="text-subtitle-2 font-weight-bold mb-3 d-flex align-center" :class="lowStockDrugs.length === 0 ? 'text-success' : 'text-warning'">
+                    <v-icon :icon="lowStockDrugs.length === 0 ? 'mdi-check-circle' : 'mdi-alert-circle'" class="mr-2" size="18" />
+                    {{ lowStockDrugs.length === 0 ? 'Tình trạng tồn kho ổn định' : 'Cảnh báo tồn kho thấp' }}
                   </div>
-                  <div v-if="drugs.filter(d => d.stock <= 100).length === 0" class="text-caption text-grey-darken-1">
+                  <div v-if="lowStockDrugs.length === 0" class="text-caption text-grey-darken-1">
                     Tất cả thuốc đều đủ tồn kho
                   </div>
-                  <div v-for="d in drugs.filter(d => d.stock <= 100)" :key="'low-'+d.id" class="d-flex justify-space-between align-center mb-2">
+                  <div v-else v-for="d in lowStockDrugs" :key="'low-'+d.id" class="d-flex justify-space-between align-center mb-2">
                     <div>
                       <div class="text-body-2 font-weight-bold">{{ d.name }}</div>
                       <div class="text-caption text-grey-darken-1">{{ d.activeIngredient }}</div>
@@ -1210,7 +1265,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="d in drugs" :key="d.id" class="hover-row">
+                      <tr v-for="d in filteredDrugs" :key="d.id" class="hover-row">
                         <td>
                           <div class="font-weight-bold text-body-2">{{ d.name }}</div>
                           <div class="text-caption text-grey-darken-1">{{ d.activeIngredient }}</div>
@@ -1229,10 +1284,10 @@
                           </v-chip>
                         </td>
                       </tr>
-                      <tr v-if="drugs.length === 0">
+                      <tr v-if="filteredDrugs.length === 0">
                         <td colspan="5" class="text-center text-grey-darken-1 py-8">
                           <v-icon icon="mdi-package-variant" size="36" class="mb-2 d-block mx-auto" />
-                          Chưa có dữ liệu kho thuốc
+                          Không tìm thấy thuốc phù hợp
                         </td>
                       </tr>
                     </tbody>
@@ -1250,126 +1305,333 @@
                 <h2 class="text-h5 font-weight-black text-primary mb-1">Thu Viện Phí</h2>
                 <p class="text-body-2 text-grey-darken-1 mb-0">Xác nhận thanh toán hóa đơn phí khám + tiền thuốc theo đơn</p>
               </div>
-              <v-chip color="warning" variant="tonal" prepend-icon="mdi-clock-outline">
-                {{ bills.filter(b => b.status === 'ChuaThanhToan').length }} chờ thanh toán
-              </v-chip>
+              <v-btn variant="tonal" color="primary" size="small" prepend-icon="mdi-refresh" @click="fetchBills">
+                Làm mới dữ liệu
+              </v-btn>
             </div>
+
+            <!-- Search filters -->
+            <v-card border flat class="bg-surface pa-4 rounded-xl mb-4">
+              <div class="text-subtitle-2 font-weight-bold mb-4">Tìm kiếm & Lọc hóa đơn</div>
+              <v-row>
+                <v-col cols="12" sm="6" md="4">
+                  <v-text-field
+                    v-model="billSearchName"
+                    label="Tìm theo tên bệnh nhân"
+                    prepend-inner-icon="mdi-magnify"
+                    variant="outlined"
+                    density="compact"
+                    rounded="lg"
+                    clearable
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <v-text-field
+                    v-model="billSearchPhone"
+                    label="Tìm theo số điện thoại"
+                    prepend-inner-icon="mdi-phone"
+                    variant="outlined"
+                    density="compact"
+                    rounded="lg"
+                    clearable
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <v-text-field
+                    v-model="billSearchDate"
+                    label="Lọc theo ngày khám"
+                    type="date"
+                    prepend-inner-icon="mdi-calendar"
+                    variant="outlined"
+                    density="compact"
+                    rounded="lg"
+                    clearable
+                    hide-details
+                  />
+                </v-col>
+              </v-row>
+              <div class="d-flex justify-space-between align-center mt-3">
+                <div class="text-caption text-grey-darken-1" v-if="filteredBills.length !== bills.length">
+                  Hiển thị {{ filteredBills.length }} kết quả từ {{ bills.length }} hóa đơn
+                </div>
+                <v-btn
+                  v-if="billSearchName || billSearchPhone || billSearchDate"
+                  variant="tonal"
+                  color="grey"
+                  size="small"
+                  prepend-icon="mdi-close-circle-outline"
+                  @click="clearBillFilters"
+                >
+                  Xóa bộ lọc
+                </v-btn>
+              </div>
+            </v-card>
 
             <v-row>
               <!-- Danh sach hoa don cho thanh toan -->
               <v-col cols="12" lg="8">
-                <v-card border flat class="bg-surface rounded-xl overflow-hidden">
+                <!-- SECTION 1: Chưa thanh toán -->
+                <v-card border flat class="bg-surface rounded-xl overflow-hidden mb-4">
                   <div class="pa-5 border-b d-flex justify-space-between align-center">
-                    <div>
-                      <h3 class="text-subtitle-1 font-weight-bold">Danh sách hóa đơn viện phí</h3>
-                      <p class="text-caption text-grey-darken-1 mb-0">Phí khám + thuốc theo đơn từ Medical Record Service</p>
+                    <div class="d-flex align-center gap-3 flex-grow-1">
+                      <v-btn
+                        :icon="billingSectionExpandedUnpaid ? 'mdi-chevron-down' : 'mdi-chevron-right'"
+                        variant="text"
+                        size="small"
+                        @click="billingSectionExpandedUnpaid = !billingSectionExpandedUnpaid"
+                      />
+                      <div>
+                        <h3 class="text-subtitle-1 font-weight-bold">
+                          Chưa Thanh Toán
+                          <v-chip size="small" color="warning" variant="flat" class="ml-2">
+                            {{ filteredUnpaidBills.length }}
+                          </v-chip>
+                        </h3>
+                        <p class="text-caption text-grey-darken-1 mb-0">Danh sách hóa đơn đang chờ xác nhận thanh toán</p>
+                      </div>
                     </div>
-                    <v-btn variant="tonal" color="primary" size="small" prepend-icon="mdi-refresh" @click="fetchBills">
-                      Làm mới
+                    <v-btn
+                      variant="tonal"
+                      color="primary"
+                      size="small"
+                      prepend-icon="mdi-file-excel"
+                      @click="exportBillsToExcel(filteredUnpaidBills, 'unpaid')"
+                      :disabled="filteredUnpaidBills.length === 0"
+                    >
+                      Xuất Excel
                     </v-btn>
                   </div>
 
-                  <div class="pa-4">
-                    <!-- Search bar for cashier -->
-                    <v-text-field
-                      v-model="billingSearchQuery"
-                      placeholder="Tìm kiếm hóa đơn theo tên hoặc số điện thoại..."
-                      prepend-inner-icon="mdi-magnify"
-                      variant="outlined"
-                      density="comfortable"
-                      clearable
-                      class="mb-4"
-                      hide-details
-                    />
+                  <v-expand-transition>
+                    <div v-show="billingSectionExpandedUnpaid" class="pa-4">
+                      <v-alert v-if="filteredUnpaidBills.length === 0" type="info" variant="tonal" rounded="lg">
+                        Không có hóa đơn nào cần thanh toán.
+                      </v-alert>
 
-                    <v-alert v-if="filteredBills.length === 0" type="info" variant="tonal" rounded="lg">
-                      Không tìm thấy hóa đơn nào phù hợp.
-                    </v-alert>
+                      <v-card
+                        v-for="b in paginatedUnpaidBills"
+                        :key="b.id"
+                        border
+                        flat
+                        class="mb-4 rounded-xl overflow-hidden"
+                      >
+                        <!-- Bill header -->
+                        <div class="pa-4 d-flex justify-space-between align-center bg-warning-lighten-5">
+                          <div class="d-flex align-center gap-3">
+                            <v-avatar color="warning" variant="tonal" size="40">
+                              <v-icon icon="mdi-clock-outline" />
+                            </v-avatar>
+                            <div>
+                              <div class="font-weight-bold text-body-1">{{ b.patientName }}</div>
+                              <div class="text-caption text-grey-darken-1">SĐT: {{ b.patientPhone }}</div>
+                            </div>
+                          </div>
+                          <v-chip
+                            color="warning"
+                            variant="flat"
+                            size="small"
+                            class="font-weight-bold"
+                          >
+                            Chờ Thanh Toán
+                          </v-chip>
+                        </div>
 
-                    <v-card
-                      v-for="b in filteredBills"
-                      :key="b.id"
-                      border
-                      flat
-                      class="mb-4 rounded-xl overflow-hidden"
-                      :style="b.status === 'DaThanhToan' ? 'opacity: 0.7;' : ''"
+                        <!-- Bill detail -->
+                        <div class="pa-4">
+                          <div class="text-caption text-grey-darken-1 mb-3">Ngày khám: {{ formatDate(b.date) }}</div>
+                          <v-divider class="mb-3" />
+                          <div class="d-flex justify-space-between text-body-2 mb-2">
+                            <span class="text-grey-darken-1">Phí khám bệnh:</span>
+                            <span class="font-weight-bold">{{ formatMoney(b.consultationFee) }}đ</span>
+                          </div>
+                          <div class="d-flex justify-space-between text-body-2 mb-2">
+                            <span class="text-grey-darken-1">Tiền thuốc:</span>
+                            <span class="font-weight-bold">{{ formatMoney(b.medicationFee) }}đ</span>
+                          </div>
+                          <v-divider class="my-2" />
+                          <div class="d-flex justify-space-between text-subtitle-1 font-weight-black">
+                            <span>Tổng cộng:</span>
+                            <span class="text-success">{{ formatMoney(b.totalAmount) }}đ</span>
+                          </div>
+                          <v-btn
+                            color="success"
+                            block
+                            class="mt-4 font-weight-bold"
+                            prepend-icon="mdi-cash-check"
+                            :loading="loading"
+                            @click="payBill(b.id)"
+                          >
+                            Xác nhận thu viện phí
+                          </v-btn>
+                        </div>
+                      </v-card>
+
+                      <!-- Pagination for unpaid bills -->
+                      <v-pagination
+                        v-if="unpaidBillsPageCount > 1"
+                        v-model="unpaidBillsPage"
+                        :length="unpaidBillsPageCount"
+                        rounded="circle"
+                        class="mt-4"
+                      />
+                    </div>
+                  </v-expand-transition>
+                </v-card>
+
+                <!-- SECTION 2: Đã thanh toán -->
+                <v-card border flat class="bg-surface rounded-xl overflow-hidden">
+                  <div class="pa-5 border-b d-flex justify-space-between align-center">
+                    <div class="d-flex align-center gap-3 flex-grow-1">
+                      <v-btn
+                        :icon="billingSectionExpandedPaid ? 'mdi-chevron-down' : 'mdi-chevron-right'"
+                        variant="text"
+                        size="small"
+                        @click="billingSectionExpandedPaid = !billingSectionExpandedPaid"
+                      />
+                      <div>
+                        <h3 class="text-subtitle-1 font-weight-bold">
+                          Đã Thanh Toán
+                          <v-chip size="small" color="success" variant="flat" class="ml-2">
+                            {{ filteredPaidBills.length }}
+                          </v-chip>
+                        </h3>
+                        <p class="text-caption text-grey-darken-1 mb-0">Danh sách các hóa đơn đã xác nhận thanh toán</p>
+                      </div>
+                    </div>
+                    <v-btn
+                      variant="tonal"
+                      color="primary"
+                      size="small"
+                      prepend-icon="mdi-file-excel"
+                      @click="exportBillsToExcel(filteredPaidBills, 'paid')"
+                      :disabled="filteredPaidBills.length === 0"
                     >
-                      <!-- Bill header -->
-                      <div class="pa-4 d-flex justify-space-between align-center" :class="b.status === 'DaThanhToan' ? 'bg-success-lighten-5' : 'bg-warning-lighten-5'">
-                        <div class="d-flex align-center gap-3">
-                          <v-avatar :color="b.status === 'DaThanhToan' ? 'success' : 'warning'" variant="tonal" size="40">
-                            <v-icon :icon="b.status === 'DaThanhToan' ? 'mdi-check-circle' : 'mdi-clock-outline'" />
-                          </v-avatar>
-                          <div>
-                            <div class="font-weight-bold text-body-1">{{ b.patientName }}</div>
-                            <div class="text-caption text-grey-darken-1">SĐT: {{ b.patientPhone }}</div>
+                      Xuất Excel
+                    </v-btn>
+                  </div>
+
+                  <v-expand-transition>
+                    <div v-show="billingSectionExpandedPaid" class="pa-4">
+                      <v-alert v-if="filteredPaidBills.length === 0" type="info" variant="tonal" rounded="lg">
+                        Chưa có hóa đơn nào được thanh toán.
+                      </v-alert>
+
+                      <v-card
+                        v-for="b in paginatedPaidBills"
+                        :key="b.id"
+                        border
+                        flat
+                        class="mb-4 rounded-xl overflow-hidden"
+                        style="opacity: 0.85;"
+                      >
+                        <!-- Bill header -->
+                        <div class="pa-4 d-flex justify-space-between align-center bg-success-lighten-5">
+                          <div class="d-flex align-center gap-3">
+                            <v-avatar color="success" variant="tonal" size="40">
+                              <v-icon icon="mdi-check-circle" />
+                            </v-avatar>
+                            <div>
+                              <div class="font-weight-bold text-body-1">{{ b.patientName }}</div>
+                              <div class="text-caption text-grey-darken-1">SĐT: {{ b.patientPhone }}</div>
+                            </div>
+                          </div>
+                          <v-chip
+                            color="success"
+                            variant="flat"
+                            size="small"
+                            class="font-weight-bold"
+                          >
+                            Đã Thanh Toán
+                          </v-chip>
+                        </div>
+
+                        <!-- Bill detail -->
+                        <div class="pa-4">
+                          <div class="text-caption text-grey-darken-1 mb-3">Ngày khám: {{ formatDate(b.date) }}</div>
+                          <v-divider class="mb-3" />
+                          <div class="d-flex justify-space-between text-body-2 mb-2">
+                            <span class="text-grey-darken-1">Phí khám bệnh:</span>
+                            <span class="font-weight-bold">{{ formatMoney(b.consultationFee) }}đ</span>
+                          </div>
+                          <div class="d-flex justify-space-between text-body-2 mb-2">
+                            <span class="text-grey-darken-1">Tiền thuốc:</span>
+                            <span class="font-weight-bold">{{ formatMoney(b.medicationFee) }}đ</span>
+                          </div>
+                          <v-divider class="my-2" />
+                          <div class="d-flex justify-space-between text-subtitle-1 font-weight-black">
+                            <span>Tổng cộng:</span>
+                            <span class="text-success">{{ formatMoney(b.totalAmount) }}đ</span>
                           </div>
                         </div>
-                        <v-chip
-                          :color="b.status === 'DaThanhToan' ? 'success' : 'warning'"
-                          variant="flat"
-                          size="small"
-                          class="font-weight-bold"
-                        >
-                          {{ b.status === 'DaThanhToan' ? 'Đã Thanh Toán' : 'Chờ Thanh Toán' }}
-                        </v-chip>
-                      </div>
+                      </v-card>
 
-                      <!-- Bill detail -->
-                      <div class="pa-4">
-                        <div class="text-caption text-grey-darken-1 mb-3">Ngày khám: {{ formatDate(b.date) }}</div>
-                        <v-divider class="mb-3" />
-                        <div class="d-flex justify-space-between text-body-2 mb-2">
-                          <span class="text-grey-darken-1">Phí khám bệnh:</span>
-                          <span class="font-weight-bold">{{ formatMoney(b.consultationFee) }}đ</span>
-                        </div>
-                        <div class="d-flex justify-space-between text-body-2 mb-2">
-                          <span class="text-grey-darken-1">Tiền thuốc:</span>
-                          <span class="font-weight-bold">{{ formatMoney(b.medicationFee) }}đ</span>
-                        </div>
-                        <v-divider class="my-2" />
-                        <div class="d-flex justify-space-between text-subtitle-1 font-weight-black">
-                          <span>Tổng cộng:</span>
-                          <span class="text-success">{{ formatMoney(b.totalAmount) }}đ</span>
-                        </div>
-                        <v-btn
-                          v-if="b.status === 'ChuaThanhToan'"
-                          color="success"
-                          block
-                          class="mt-4 font-weight-bold"
-                          prepend-icon="mdi-cash-check"
-                          :loading="loading"
-                          @click="payBill(b.id)"
-                        >
-                          Xác nhận thu viện phí
-                        </v-btn>
-                      </div>
-                    </v-card>
-                  </div>
+                      <!-- Pagination for paid bills -->
+                      <v-pagination
+                        v-if="paidBillsPageCount > 1"
+                        v-model="paidBillsPage"
+                        :length="paidBillsPageCount"
+                        rounded="circle"
+                        class="mt-4"
+                      />
+                    </div>
+                  </v-expand-transition>
                 </v-card>
               </v-col>
 
               <!-- Panel thong ke nhanh -->
               <v-col cols="12" lg="4">
                 <v-card border flat class="bg-surface pa-5 rounded-xl mb-4">
-                  <h3 class="text-subtitle-1 font-weight-bold mb-4">Tổng kết hôm nay</h3>
                   <div class="d-flex justify-space-between align-center mb-4">
-                    <div class="text-caption text-grey-darken-1">Tổng hóa đơn</div>
-                    <div class="text-h6 font-weight-black">{{ bills.length }}</div>
+                    <h3 class="text-subtitle-1 font-weight-bold">Tổng kết</h3>
+                  </div>
+                  
+                  <!-- Time range selector -->
+                  <v-btn-group color="primary" variant="tonal" class="mb-4 w-100">
+                    <v-btn
+                      :active="billStatsTimeRange === 'today'"
+                      @click="billStatsTimeRange = 'today'"
+                      size="small"
+                      class="flex-grow-1 font-weight-bold"
+                    >
+                      Hôm nay
+                    </v-btn>
+                    <v-btn
+                      :active="billStatsTimeRange === 'month'"
+                      @click="billStatsTimeRange = 'month'"
+                      size="small"
+                      class="flex-grow-1 font-weight-bold"
+                    >
+                      Tháng
+                    </v-btn>
+                    <v-btn
+                      :active="billStatsTimeRange === 'year'"
+                      @click="billStatsTimeRange = 'year'"
+                      size="small"
+                      class="flex-grow-1 font-weight-bold"
+                    >
+                      Năm
+                    </v-btn>
+                  </v-btn-group>
+
+                  <div class="d-flex justify-space-between align-center mb-4">
+                    <div class="text-caption text-grey-darken-1">Hóa đơn</div>
+                    <div class="text-h6 font-weight-black">{{ billsByTimeRange.length }}</div>
                   </div>
                   <div class="d-flex justify-space-between align-center mb-4">
                     <div class="text-caption text-grey-darken-1">Đã thanh toán</div>
-                    <div class="text-h6 font-weight-black text-success">{{ bills.filter(b => b.status === 'DaThanhToan').length }}</div>
+                    <div class="text-h6 font-weight-black text-success">{{ paidBillsByTimeRange.length }}</div>
                   </div>
                   <div class="d-flex justify-space-between align-center mb-4">
                     <div class="text-caption text-grey-darken-1">Chờ thu</div>
-                    <div class="text-h6 font-weight-black text-warning">{{ bills.filter(b => b.status === 'ChuaThanhToan').length }}</div>
+                    <div class="text-h6 font-weight-black text-warning">{{ unpaidBillsByTimeRange.length }}</div>
                   </div>
                   <v-divider class="my-3" />
                   <div class="d-flex justify-space-between align-center">
                     <div class="text-caption text-grey-darken-1 font-weight-bold">Doanh thu đã thu</div>
                     <div class="text-subtitle-1 font-weight-black text-success">
-                      {{ formatMoney(bills.filter(b => b.status === 'DaThanhToan').reduce((s, b) => s + (b.totalAmount || 0), 0)) }}đ
+                      {{ formatMoney(paidBillsByTimeRange.reduce((s, b) => s + (b.totalAmount || 0), 0)) }}đ
                     </div>
                   </div>
                 </v-card>
@@ -1437,6 +1699,15 @@
                             style="display: none;"
                             @change="handleDoctorImport"
                           />
+                          <v-btn
+                            v-if="selectedDoctorIds.length > 0"
+                            color="error"
+                            prepend-icon="mdi-trash-can"
+                            class="font-weight-bold"
+                            @click="deleteSelectedDoctors"
+                          >
+                            Xóa đã chọn ({{ selectedDoctorIds.length }})
+                          </v-btn>
                           <v-btn color="success" prepend-icon="mdi-plus" class="font-weight-bold" @click="addDoctorDialog = true">
                             Thêm bác sĩ
                           </v-btn>
@@ -1446,6 +1717,13 @@
                       <v-table density="comfortable" class="bg-surface rounded border">
                         <thead>
                           <tr>
+                            <th class="text-left font-weight-bold" style="width: 50px;">
+                              <v-checkbox
+                                v-model="isAllDoctorsSelected"
+                                hide-details
+                                density="compact"
+                              />
+                            </th>
                             <th class="text-left font-weight-bold">Bác sĩ</th>
                             <th class="text-left font-weight-bold">Chuyên khoa</th>
                             <th class="text-left font-weight-bold">Bằng cấp</th>
@@ -1456,6 +1734,14 @@
                         </thead>
                         <tbody>
                           <tr v-for="doc in paginatedDoctors" :key="doc.id">
+                            <td>
+                              <v-checkbox
+                                v-model="selectedDoctorIds"
+                                :value="doc.id"
+                                hide-details
+                                density="compact"
+                              />
+                            </td>
                             <td class="font-weight-bold">{{ doc.fullName }}</td>
                             <td>
                               <v-chip :color="getSpecialtyColor(doc.specialty)" size="small" variant="flat">{{ doc.specialty }}</v-chip>
@@ -1648,23 +1934,114 @@
                   
                   <v-row class="mb-6">
                     <v-col cols="12" sm="4">
-                      <v-card color="primary-darken-1" border class="pa-4">
-                        <div class="text-caption text-grey-lighten-2">TỔNG DOANH THU ĐÃ THU</div>
-                        <div class="text-h4 font-weight-black mt-2 text-white">{{ formatMoney(adminFinancials.totalRevenue) }}đ</div>
+                      <v-card
+                        color="primary"
+                        border
+                        class="pa-4 cursor-pointer d-flex flex-column justify-space-between h-100"
+                        :elevation="selectedFinanceCard === 'totalRevenue' ? 8 : 2"
+                        @click="selectFinanceCard('totalRevenue')"
+                      >
+                        <div>
+                          <div class="text-caption text-white">TỔNG DOANH THU ĐÃ THU</div>
+                          <div class="text-h4 font-weight-black mt-2 text-white">{{ formatMoney(adminFinancials.totalRevenue) }}đ</div>
+                        </div>
                       </v-card>
                     </v-col>
                     <v-col cols="12" sm="4">
-                      <v-card color="success-darken-1" border class="pa-4">
-                        <div class="text-caption text-grey-lighten-2">HÓA ĐƠN ĐÃ THANH TOÁN</div>
-                        <div class="text-h4 font-weight-black mt-2 text-white">{{ adminFinancials.paidCount }} hóa đơn</div>
-                        <div class="text-body-2 text-success mt-1">Đã thu: {{ formatMoney(adminFinancials.paidAmount) }}đ</div>
+                      <v-card
+                        color="success"
+                        border
+                        class="pa-4 cursor-pointer d-flex flex-column justify-space-between h-100"
+                        :elevation="selectedFinanceCard === 'paidInvoices' ? 8 : 2"
+                        @click="selectFinanceCard('paidInvoices')"
+                      >
+                        <div>
+                          <div class="text-caption text-white">HÓA ĐƠN ĐÃ THANH TOÁN</div>
+                          <div class="text-h4 font-weight-black mt-2 text-white">{{ adminFinancials.paidCount }} hóa đơn</div>
+                          <div class="text-body-2 text-white mt-1">Đã thu: {{ formatMoney(adminFinancials.paidAmount) }}đ</div>
+                        </div>
                       </v-card>
                     </v-col>
                     <v-col cols="12" sm="4">
-                      <v-card color="warning-darken-1" border class="pa-4">
-                        <div class="text-caption text-grey-lighten-2">HÓA ĐƠN CHƯA THANH TOÁN</div>
-                        <div class="text-h4 font-weight-black mt-2 text-white">{{ adminFinancials.pendingCount }} hóa đơn</div>
-                        <div class="text-body-2 text-warning mt-1">Chờ thu: {{ formatMoney(adminFinancials.pendingAmount) }}đ</div>
+                      <v-card
+                        color="warning"
+                        border
+                        class="pa-4 cursor-pointer d-flex flex-column justify-space-between h-100"
+                        :elevation="selectedFinanceCard === 'pendingInvoices' ? 8 : 2"
+                        @click="selectFinanceCard('pendingInvoices')"
+                      >
+                        <div>
+                          <div class="text-caption text-white">HÓA ĐƠN CHƯA THANH TOÁN</div>
+                          <div class="text-h4 font-weight-black mt-2 text-white">{{ adminFinancials.pendingCount }} hóa đơn</div>
+                          <div class="text-body-2 text-white mt-1">Chờ thu: {{ formatMoney(adminFinancials.pendingAmount) }}đ</div>
+                        </div>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+
+                  <v-row class="mb-6">
+                    <v-col cols="12" md="6">
+                      <v-card
+                        color="secondary"
+                        border
+                        class="pa-4 cursor-pointer d-flex flex-column justify-space-between h-100"
+                        :elevation="selectedFinanceCard === 'monthlyRevenue' ? 8 : 2"
+                        @click="selectFinanceCard('monthlyRevenue')"
+                      >
+                        <div>
+                          <div class="text-caption text-white">DOANH THU THÁNG NÀY</div>
+                          <div class="text-h4 font-weight-black mt-2 text-white">{{ formatMoney(adminFinancials.monthlyRevenue) }}đ</div>
+                        </div>
+                      </v-card>
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-card
+                        color="info"
+                        border
+                        class="pa-4 cursor-pointer d-flex flex-column justify-space-between h-100"
+                        :elevation="selectedFinanceCard === 'yearlyRevenue' ? 8 : 2"
+                        @click="selectFinanceCard('yearlyRevenue')"
+                      >
+                        <div>
+                          <div class="text-caption text-white">DOANH THU NĂM NAY</div>
+                          <div class="text-h4 font-weight-black mt-2 text-white">{{ formatMoney(adminFinancials.yearlyRevenue) }}đ</div>
+                        </div>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+
+                  <v-card border flat class="bg-surface pa-4 mb-6">
+                    <div class="d-flex justify-space-between align-center mb-3">
+                      <div>
+                        <div class="text-subtitle-1 font-weight-bold">{{ financeCardDetails.title }}</div>
+                        <div class="text-caption text-grey-darken-1">{{ financeCardDetails.description }}</div>
+                      </div>
+                      <div class="text-h6 font-weight-bold">Chi tiết</div>
+                    </div>
+                    <div class="text-body-1 font-weight-bold mb-2">{{ financeCardDetails.value }}</div>
+                    <div class="text-body-2 text-grey-darken-1">{{ financeCardDetails.extra }}</div>
+                  </v-card>
+
+                  <div class="text-subtitle-1 font-weight-bold mb-3">Biểu đồ tài chính</div>
+                  <v-row class="mb-6">
+                    <v-col cols="12" md="6">
+                      <v-card border flat class="bg-surface pa-4" style="min-height: 360px;">
+                        <div class="d-flex justify-space-between align-center mb-4">
+                          <div class="text-body-1 font-weight-medium">Tỉ lệ thu / chưa thu</div>
+                        </div>
+                        <div style="position: relative; height: 280px;">
+                          <canvas ref="statusChartCanvas" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                      </v-card>
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-card border flat class="bg-surface pa-4" style="min-height: 360px;">
+                        <div class="d-flex justify-space-between align-center mb-4">
+                          <div class="text-body-1 font-weight-medium">Doanh thu theo ngày</div>
+                        </div>
+                        <div style="position: relative; height: 280px;">
+                          <canvas ref="revenueChartCanvas" style="width: 100%; height: 100%;"></canvas>
+                        </div>
                       </v-card>
                     </v-col>
                   </v-row>
@@ -2028,8 +2405,9 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import Chart from 'chart.js/auto'
 
 export default {
   name: 'DashboardPage',
@@ -2258,14 +2636,7 @@ export default {
       }
     ])
     const billingSearchQuery = ref('')
-    const filteredBills = computed(() => {
-      if (!billingSearchQuery.value) return bills.value
-      const query = billingSearchQuery.value.toLowerCase().trim()
-      return bills.value.filter(b => 
-        (b.patientName && b.patientName.toLowerCase().includes(query)) || 
-        (b.patientPhone && b.patientPhone.includes(query))
-      )
-    })
+
 
     const medicalRecords = ref([
       {
@@ -3910,33 +4281,60 @@ export default {
         const pending = bills.value.filter(b => b.status === 'ChuaThanhToan' || b.status === 'Unpaid')
         const totalPaid = paid.reduce((sum, b) => sum + (b.totalAmount || 0), 0)
         const totalPending = pending.reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+        const now = new Date()
+        const monthRevenue = paid.reduce((sum, b) => {
+          const billDate = new Date(b.date)
+          return billDate.getFullYear() === now.getFullYear() && billDate.getMonth() === now.getMonth()
+            ? sum + (b.totalAmount || 0)
+            : sum
+        }, 0)
+        const yearRevenue = paid.reduce((sum, b) => {
+          const billDate = new Date(b.date)
+          return billDate.getFullYear() === now.getFullYear()
+            ? sum + (b.totalAmount || 0)
+            : sum
+        }, 0)
         adminFinancials.value = {
           totalRevenue: totalPaid,
           paidCount: paid.length,
           paidAmount: totalPaid,
           pendingCount: pending.length,
-          pendingAmount: totalPending
+          pendingAmount: totalPending,
+          monthlyRevenue: monthRevenue,
+          yearlyRevenue: yearRevenue
         }
+        buildFinanceCharts()
         return
       }
       try {
-        const url = `${authApiUrl.value}/Invoice`
-        const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${currentUser.value.token}` }
-        })
-        if (!res.ok) throw new Error('Không thể tải dữ liệu báo cáo tài chính')
-        const data = await res.json()
-        const paid = data.filter(b => b.status === 'DaThanhToan' || b.status === 'Paid')
-        const pending = data.filter(b => b.status === 'ChuaThanhToan' || b.status === 'Unpaid')
+        await fetchBills()
+        const paid = bills.value.filter(b => b.status === 'DaThanhToan' || b.status === 'Paid')
+        const pending = bills.value.filter(b => b.status === 'ChuaThanhToan' || b.status === 'Unpaid')
         const totalPaid = paid.reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0)
         const totalPending = pending.reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0)
+        const now = new Date()
+        const monthRevenue = paid.reduce((sum, b) => {
+          const billDate = new Date(b.date)
+          return billDate.getFullYear() === now.getFullYear() && billDate.getMonth() === now.getMonth()
+            ? sum + (b.totalAmount || b.amount || 0)
+            : sum
+        }, 0)
+        const yearRevenue = paid.reduce((sum, b) => {
+          const billDate = new Date(b.date)
+          return billDate.getFullYear() === now.getFullYear()
+            ? sum + (b.totalAmount || b.amount || 0)
+            : sum
+        }, 0)
         adminFinancials.value = {
           totalRevenue: totalPaid,
           paidCount: paid.length,
           paidAmount: totalPaid,
           pendingCount: pending.length,
-          pendingAmount: totalPending
+          pendingAmount: totalPending,
+          monthlyRevenue: monthRevenue,
+          yearlyRevenue: yearRevenue
         }
+        buildFinanceCharts()
       } catch (err) {
         showAlert(err.message, 'error')
       }
@@ -3953,25 +4351,16 @@ export default {
         const data = await res.json()
         
         // Chuẩn hóa dữ liệu hóa đơn từ Nhóm 6
-        bills.value = data.map(b => {
-          let name = b.patientName || 'Bệnh nhân'
-          let phone = b.patientPhone || 'Không có'
-          const match = name.match(/^(.*?)\s*\((.*?)\)$/)
-          if (match) {
-            name = match[1].trim()
-            phone = match[2].trim()
-          }
-          return {
-            id: b.id || b.billId,
-            patientName: name,
-            patientPhone: phone,
-            consultationFee: b.consultationFee || 0,
-            medicationFee: b.medicineFee || b.medicationFee || 0,
-            totalAmount: b.totalAmount || b.amount || 0,
-            status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
-            date: b.date || b.createdDate || new Date().toISOString()
-          }
-        })
+        bills.value = data.map(b => ({
+          id: b.id || b.billId,
+          patientName: b.patientName || 'Bệnh nhân',
+          patientPhone: b.patientPhone || 'Không có',
+          consultationFee: b.consultationFee || 0,
+          medicationFee: b.medicationFee || 0,
+          totalAmount: b.totalAmount || b.amount || 0,
+          status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
+          date: b.date || b.createdDate || new Date().toISOString()
+        }))
       } catch (err) {
         console.error('Lỗi tải danh sách hóa đơn:', err.message)
       }
@@ -4388,7 +4777,480 @@ export default {
       e.target.value = ''
     }
 
-    return {
+    
+
+    // --- INTEGRATED FROM DEMO.VUE FOR PHARMACY, BILLING & FINANCIAL REPORTS ---
+    
+    // Drug units
+    const availableDrugUnits = ref([
+      'Tuýt',
+      'Vỉ',
+      'Chai',
+      'Viên',
+      'Hộp',
+      'Lọ'
+    ])
+
+    // Billing UI state - expand/collapse sections
+    const billingSectionExpandedUnpaid = ref(true)
+    const billingSectionExpandedPaid = ref(true)
+    
+    // Billing search fields
+    const billSearchName = ref('')
+    const billSearchPhone = ref('')
+    const billSearchDate = ref('')
+    
+    // Billing stats time filter (Today, Month, Year)
+    const billStatsTimeRange = ref('today') // 'today', 'month', 'year'
+    
+    // Billing pagination
+    const unpaidBillsPage = ref(1)
+    const paidBillsPage = ref(1)
+    const billsPageSize = 2
+    
+    // Drug search & filter
+    const drugSearchName = ref('')
+    const drugFilterUnit = ref('')
+    const drugFilterStockRange = ref('all') // 'all', 'low', 'medium', 'high'
+
+    // Filter bills by search criteria
+    const filteredBills = computed(() => {
+      return bills.value.filter(bill => {
+        const matchName = bill.patientName.toLowerCase().includes(billSearchName.value.toLowerCase())
+        const matchPhone = bill.patientPhone.includes(billSearchPhone.value)
+        const matchDate = billSearchDate.value === '' || bill.date === billSearchDate.value
+        return matchName && matchPhone && matchDate
+      })
+    })
+
+    // Filter unpaid bills
+    const filteredUnpaidBills = computed(() => {
+      return filteredBills.value.filter(b => b.status === 'ChuaThanhToan')
+    })
+
+    // Filter paid bills
+    const filteredPaidBills = computed(() => {
+      return filteredBills.value.filter(b => b.status === 'DaThanhToan')
+    })
+
+    // Get bills by time range for stats
+    const getDateRange = () => {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const todayStr = `${year}-\$${month}-\$${day}`
+
+      switch (billStatsTimeRange.value) {
+        case 'today':
+          return { start: todayStr, end: todayStr }
+        case 'month': {
+          const monthStart = `${year}-\$${month}-01`
+          return { start: monthStart, end: todayStr }
+        }
+        case 'year': {
+          const yearStart = `${year}-01-01`
+          return { start: yearStart, end: todayStr }
+        }
+        default:
+          return { start: '', end: '' }
+      }
+    }
+
+    const billsByTimeRange = computed(() => {
+      const range = getDateRange()
+      if (!range.start) return bills.value
+
+      return bills.value.filter(b => {
+        const billDate = b.date ? b.date.split('T')[0] : ''
+        return billDate >= range.start && billDate <= range.end
+      })
+    })
+
+    const paidBillsByTimeRange = computed(() => {
+      return billsByTimeRange.value.filter(b => b.status === 'DaThanhToan')
+    })
+
+    const unpaidBillsByTimeRange = computed(() => {
+      return billsByTimeRange.value.filter(b => b.status === 'ChuaThanhToan')
+    })
+
+    // Filter drugs by search & filter criteria
+    const filteredDrugs = computed(() => {
+      return drugs.value.filter(drug => {
+        const matchName = drug.name.toLowerCase().includes(drugSearchName.value.toLowerCase())
+        const matchUnit = drugFilterUnit.value === '' || drug.unit === drugFilterUnit.value
+        
+        let matchStock = true
+        switch (drugFilterStockRange.value) {
+          case 'low':
+            matchStock = drug.stock < 200
+            break
+          case 'medium':
+            matchStock = drug.stock >= 200 && drug.stock <= 500
+            break
+          case 'high':
+            matchStock = drug.stock > 500
+            break
+          default:
+            matchStock = true
+        }
+        
+        return matchName && matchUnit && matchStock
+      })
+    })
+
+    const lowStockDrugs = computed(() => {
+      return drugs.value.filter(d => d.stock < 200)
+    })
+
+    // Pagination for unpaid bills
+    const paginatedUnpaidBills = computed(() => {
+      const start = (unpaidBillsPage.value - 1) * billsPageSize
+      const end = start + billsPageSize
+      return filteredUnpaidBills.value.slice(start, end)
+    })
+
+    const unpaidBillsPageCount = computed(() => {
+      return Math.ceil(filteredUnpaidBills.value.length / billsPageSize) || 1
+    })
+
+    // Pagination for paid bills
+    const paginatedPaidBills = computed(() => {
+      const start = (paidBillsPage.value - 1) * billsPageSize
+      const end = start + billsPageSize
+      return filteredPaidBills.value.slice(start, end)
+    })
+
+    const paidBillsPageCount = computed(() => {
+      return Math.ceil(filteredPaidBills.value.length / billsPageSize) || 1
+    })
+
+    const exportBillsToExcel = (billsToExport, type) => {
+      try {
+        if (billsToExport.length === 0) {
+          showAlert('Không có dữ liệu để xuất', 'warning')
+          return
+        }
+
+        // Create CSV content
+        const headers = ['Bệnh nhân', 'SĐT', 'Phí khám (đ)', 'Tiền thuốc (đ)', 'Tổng cộng (đ)', 'Trạng thái', 'Ngày khám']
+        
+        const rows = billsToExport.map(bill => [
+          bill.patientName,
+          bill.patientPhone,
+          bill.consultationFee,
+          bill.medicationFee,
+          bill.totalAmount,
+          bill.status === 'DaThanhToan' ? 'Đã thanh toán' : 'Chưa thanh toán',
+          formatDate(bill.date)
+        ])
+
+        // Calculate totals
+        const totalFees = billsToExport.reduce((sum, b) => sum + (b.consultationFee || 0), 0)
+        const totalMeds = billsToExport.reduce((sum, b) => sum + (b.medicationFee || 0), 0)
+        const totalAmount = billsToExport.reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+
+        const summaryRows = [
+          [],
+          ['TỔNG CỘNG', '', totalFees, totalMeds, totalAmount, '', '']
+        ]
+
+        const allRows = [...rows, ...summaryRows]
+
+        // Create CSV string
+        let csvContent = headers.join(',') + '\n'
+        csvContent += allRows.map(row => 
+          row.map(cell => {
+            // Escape commas and quotes in cell values
+            if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+              return '"' + cell.replace(/"/g, '""') + '"'
+            }
+            return cell
+          }).join(',')
+        ).join('\n')
+
+        // Create Blob and download
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        
+        const fileName = type === 'unpaid' ? 'Hóa_đơn_chưa_thanh_toán.csv' : 'Hóa_đơn_đã_thanh_toán.csv'
+        link.setAttribute('href', url)
+        link.setAttribute('download', fileName)
+        link.style.visibility = 'hidden'
+        
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        showAlert(`Xuất danh sách ${type === 'unpaid' ? 'chưa thanh toán' : 'đã thanh toán'} thành công!`, 'success')
+      } catch (err) {
+        showAlert('Lỗi xuất file: ' + err.message, 'error')
+      }
+    }
+
+    const selectedFinanceCard = ref('totalRevenue')
+
+    const financeCardDetails = computed(() => {
+      switch (selectedFinanceCard.value) {
+        case 'totalRevenue':
+          return {
+            title: 'TỔNG DOANH THU ĐÃ THU',
+            description: `Tổng doanh thu đã thu từ tất cả hóa đơn đã thanh toán.`,
+            value: `${formatMoney(adminFinancials.value.totalRevenue)}đ`,
+            extra: `Số hóa đơn đã thu: ${adminFinancials.value.paidCount}`
+          }
+        case 'paidInvoices':
+          return {
+            title: 'HÓA ĐƠN ĐÃ THANH TOÁN',
+            description: `Số lượng hóa đơn đã thanh toán và tổng tiền đã thu.`,
+            value: `${adminFinancials.value.paidCount} hóa đơn`,
+            extra: `Đã thu: ${formatMoney(adminFinancials.value.paidAmount)}đ`
+          }
+        case 'pendingInvoices':
+          return {
+            title: 'HÓA ĐƠN CHƯA THANH TOÁN',
+            description: `Số lượng hóa đơn đang chờ thu và tổng số tiền chưa được thu.`,
+            value: `${adminFinancials.value.pendingCount} hóa đơn`,
+            extra: `Chờ thu: ${formatMoney(adminFinancials.value.pendingAmount)}đ`
+          }
+        case 'monthlyRevenue':
+          return {
+            title: 'DOANH THU THÁNG NÀY',
+            description: `Doanh thu đã thu trong tháng hiện tại.`,
+            value: `${formatMoney(adminFinancials.value.monthlyRevenue)}đ`,
+            extra: `Dựa trên các hóa đơn đã thu trong tháng này.`
+          }
+        case 'yearlyRevenue':
+          return {
+            title: 'DOANH THU NĂM NAY',
+            description: `Doanh thu đã thu trong năm hiện tại.`,
+            value: `${formatMoney(adminFinancials.value.yearlyRevenue)}đ`,
+            extra: `Dựa trên các hóa đơn đã thu trong năm này.`
+          }
+        default:
+          return {
+            title: '',
+            description: '',
+            value: '',
+            extra: ''
+          }
+      }
+    })
+
+    const selectFinanceCard = key => {
+      selectedFinanceCard.value = key
+    }
+
+    const statusChartCanvas = ref(null)
+    const revenueChartCanvas = ref(null)
+    const statusChartInstance = ref(null)
+    const revenueChartInstance = ref(null)
+
+    const destroyChartInstance = (instanceRef) => {
+      if (instanceRef.value) {
+        instanceRef.value.destroy()
+        instanceRef.value = null
+      }
+    }
+
+    const buildFinanceCharts = () => {
+      const paidAmount = bills.value.filter(b => b.status === 'DaThanhToan' || b.status === 'Paid')
+        .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+      const pendingAmount = bills.value.filter(b => b.status === 'ChuaThanhToan' || b.status === 'Unpaid')
+        .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+      const paidCount = bills.value.filter(b => b.status === 'DaThanhToan' || b.status === 'Paid').length
+      const pendingCount = bills.value.filter(b => b.status === 'ChuaThanhToan' || b.status === 'Unpaid').length
+
+      const groupedByDate = bills.value.reduce((acc, bill) => {
+        const key = bill.date ? bill.date.split('T')[0] : 'Không xác định'
+        if (!acc[key]) acc[key] = 0
+        acc[key] += (bill.totalAmount || 0)
+        return acc
+      }, {})
+
+      const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a) - new Date(b))
+      const labels = sortedDates.slice(-7)
+      const lineData = labels.map(date => groupedByDate[date] || 0)
+
+      nextTick(() => {
+        destroyChartInstance(statusChartInstance)
+        destroyChartInstance(revenueChartInstance)
+
+        if (statusChartCanvas.value) {
+          statusChartInstance.value = new Chart(statusChartCanvas.value, {
+            type: 'doughnut',
+            data: {
+              labels: ['Đã thanh toán', 'Chưa thanh toán'],
+              datasets: [{
+                data: [paidAmount, pendingAmount],
+                backgroundColor: ['#4caf50', '#ffb300'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom' }
+              }
+            }
+          })
+        }
+
+        if (revenueChartCanvas.value) {
+          revenueChartInstance.value = new Chart(revenueChartCanvas.value, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Doanh thu theo ngày',
+                data: lineData,
+                borderColor: '#1976d2',
+                backgroundColor: 'rgba(25, 118, 210, 0.16)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#1976d2'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  grid: { display: false }
+                },
+                y: {
+                  ticks: {
+                    callback: value => value.toLocaleString('vi-VN')
+                  }
+                }
+              },
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          })
+        }
+      })
+    }
+
+    const refreshFinanceCharts = () => {
+      if (activeTab.value === 'admin' && adminSubTab.value === 'financial-reports') {
+        buildFinanceCharts()
+      }
+    }
+
+    watch([bills, () => adminFinancials.value.totalRevenue, activeTab, () => adminSubTab.value], () => {
+      refreshFinanceCharts()
+    }, { deep: true })
+
+    const clearBillFilters = () => {
+      billSearchName.value = ''
+      billSearchPhone.value = ''
+      billSearchDate.value = ''
+    }
+
+
+    // Doctor multi-selection & bulk deletion logic
+    const selectedDoctorIds = ref([])
+    
+    const isAllDoctorsSelected = computed({
+      get: () => {
+        if (paginatedDoctors.value.length === 0) return false
+        return paginatedDoctors.value.every(d => selectedDoctorIds.value.includes(d.id))
+      },
+      set: (val) => {
+        if (val) {
+          paginatedDoctors.value.forEach(d => {
+            if (!selectedDoctorIds.value.includes(d.id)) {
+              selectedDoctorIds.value.push(d.id)
+            }
+          })
+        } else {
+          paginatedDoctors.value.forEach(d => {
+            const idx = selectedDoctorIds.value.indexOf(d.id)
+            if (idx !== -1) {
+              selectedDoctorIds.value.splice(idx, 1)
+            }
+          })
+        }
+      }
+    })
+
+    const deleteSelectedDoctors = async () => {
+      if (selectedDoctorIds.value.length === 0) return
+      if (!confirm(`Bạn có chắc chắn muốn ngừng kích hoạt ${selectedDoctorIds.value.length} bác sĩ đã chọn?`)) return
+      try {
+        loading.value = true
+        if (isMockMode.value) {
+          selectedDoctorIds.value.forEach(id => {
+            const doc = doctors.value.find(d => d.id === id)
+            if (doc) doc.isActive = false
+          })
+          showAlert('Đã thay đổi trạng thái các bác sĩ (Giả lập)', 'success')
+        } else {
+          for (const id of selectedDoctorIds.value) {
+            const url = `${apiUrl.value}/doctors/${id}`
+            const res = await fetch(url, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${currentUser.value.token}`
+              }
+            })
+            if (!res.ok) console.error(`Lỗi ngừng kích hoạt bác sĩ ID ${id}`)
+          }
+          await fetchDoctors()
+          showAlert('Đã ngừng kích hoạt các bác sĩ đã chọn thành công!', 'success')
+        }
+        selectedDoctorIds.value = []
+      } catch (err) {
+        showAlert(err.message, 'error')
+      } finally {
+        loading.value = false
+      }
+    }
+    
+    // --- END OF INTEGRATED LOGIC ---
+
+return {
+      selectedDoctorIds,
+      isAllDoctorsSelected,
+      deleteSelectedDoctors,
+
+      availableDrugUnits,
+      billingSectionExpandedUnpaid,
+      billingSectionExpandedPaid,
+      billSearchName,
+      billSearchPhone,
+      billSearchDate,
+      filteredBills,
+      filteredUnpaidBills,
+      filteredPaidBills,
+      paginatedUnpaidBills,
+      unpaidBillsPageCount,
+      unpaidBillsPage,
+      paginatedPaidBills,
+      paidBillsPageCount,
+      paidBillsPage,
+      billStatsTimeRange,
+      billsByTimeRange,
+      paidBillsByTimeRange,
+      unpaidBillsByTimeRange,
+      drugSearchName,
+      drugFilterUnit,
+      drugFilterStockRange,
+      filteredDrugs,
+      lowStockDrugs,
+      selectedFinanceCard,
+      financeCardDetails,
+      statusChartCanvas,
+      revenueChartCanvas,
+      clearBillFilters,
+      exportBillsToExcel,
+      selectFinanceCard,
       // Sidebar & Layout
       sidebarOpen,
       sidebarRail,
@@ -4402,20 +5264,17 @@ export default {
       activeTab,
       loading,
       alert,
-      
       // Mock & Auth
       isMockMode,
       currentUser,
       loginForm,
       drugs,
       bills,
-      filteredBills,
       billingSearchQuery,
       medicalRecords,
       drugForm,
       doctorForm,
       activeConsultation,
-      
       // Data refs
       doctors,
       specialties,
@@ -4426,12 +5285,10 @@ export default {
       pendingAppointments,
       recentTicket,
       bookingForm,
-      
       // Search
       searchQuery,
       searchResults,
       lastConfirmedApp,
-      
       // Doctor board
       doctorPortal,
       doctorPortalSearch,
@@ -4440,11 +5297,9 @@ export default {
       filteredDoctorPortalList,
       doctorQueue,
       sortedDoctorQueue,
-      
       // TV Queue
       tvQueue,
       tvQueueGroupedByDoctor,
-
       // Bổ sung đề tài 05
       adminSubTab,
       patientSearchPhone,
@@ -4457,12 +5312,10 @@ export default {
       patientProfile,
       patientHistoryDialog,
       adminFinancials,
-
       // Pagination refs and lists
       doctorPage,
       paginatedDoctors,
       doctorPageCount,
-
       // Pagination refs and lists for booking tab
       bookingDoctorSearchQuery,
       bookingDoctorPage,
@@ -4476,7 +5329,6 @@ export default {
       pendingPage,
       paginatedPendingAppointments,
       pendingPageCount,
-
       // Import inputs & functions
       doctorImportInput,
       scheduleImportInput,
@@ -4484,7 +5336,6 @@ export default {
       handleDoctorImport,
       triggerScheduleImport,
       handleScheduleImport,
-
       // Functions
       selectDoctor,
       selectSchedule,
@@ -4526,7 +5377,6 @@ export default {
       fetchPatientHistory,
       printPrescription,
       printQueueTicket,
-      
       // Helpers
       hasRole,
       formatMoney,
