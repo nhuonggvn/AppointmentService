@@ -4469,7 +4469,7 @@ export default {
           patientName: b.patientName || 'Bệnh nhân',
           patientPhone: b.patientPhone || 'Không có',
           consultationFee: b.consultationFee || 0,
-          medicationFee: b.medicationFee || 0,
+          medicationFee: b.medicationFee || b.medicineFee || 0,
           totalAmount: b.totalAmount || b.amount || 0,
           status: (b.status === 'Paid' || b.status === 'DaThanhToan') ? 'DaThanhToan' : 'ChuaThanhToan',
           date: b.date || b.createdDate || new Date().toISOString()
