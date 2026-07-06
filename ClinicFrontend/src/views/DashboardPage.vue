@@ -1761,7 +1761,7 @@
                         </tbody>
                       </v-table>
                       <!-- Pagination for Doctors -->
-                      <div v-if="doctors.length > 5" class="d-flex justify-center mt-4">
+                      <div v-if="doctors.length > 10" class="d-flex justify-center mt-4">
                         <v-pagination
                           v-model="doctorPage"
                           :length="doctorPageCount"
@@ -2457,7 +2457,7 @@ export default {
 
     // Pagination refs
     const doctorPage = ref(1)
-    const doctorPageSize = 5
+    const doctorPageSize = 10
     const schedulePage = ref(1)
     const schedulePageSize = 5
     const pendingPage = ref(1)
